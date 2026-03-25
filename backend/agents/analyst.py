@@ -340,6 +340,7 @@ async def run_analyst(company_profile: dict, competitor_pages: list[dict], revie
                 "competitor_name": company_name + " Competitor",
                 "executive_summary": "Analysis encountered a formatting error and returned partial results.",
                 "signals": {"threats": [], "opportunities": []},
+                "marketing_vs_reality_gaps": [],
                 "feature_gap_analysis": {"we_win": [], "they_win": [], "contested": []},
                 "pricing_intelligence": {"model": "Unknown", "community_price_perception": "Unknown"},
                 "community_sentiment": {"overall_score": 50},
