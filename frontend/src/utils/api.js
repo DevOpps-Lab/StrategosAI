@@ -81,6 +81,9 @@ export const generateSalesSequence = (competitorId, data) =>
 export const sendSalesEmail = (recipientEmail, subject, body) =>
     request('/sales/send', { method: 'POST', body: { recipient_email: recipientEmail, subject, body } });
 
+export const generateClaimEmail = (competitorId, data) =>
+    request(`/sales/claim-email/${competitorId}`, { method: 'POST', body: data });
+
 // --- Voice ---
 export const triggerVoiceCall = (competitorId) =>
     request('/voice/call', { method: 'POST', body: { competitor_id: competitorId } });

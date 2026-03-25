@@ -1363,3 +1363,225 @@ a:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- Claim vs Reality Table --- */
+.claim-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.claim-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+}
+
+.claim-table thead th {
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.claim-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+.claim-table thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+
+.claim-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.claim-table tbody tr:hover {
+  background: var(--bg-glass-hover);
+}
+
+.claim-table tbody td {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+  line-height: 1.55;
+}
+
+.claim-table .claim-cell {
+  color: var(--text-primary);
+  font-weight: 600;
+  max-width: 260px;
+}
+
+.claim-table .claim-cell__quote {
+  color: var(--accent-warning);
+  font-style: italic;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.claim-table .evidence-cell {
+  color: var(--text-secondary);
+  max-width: 300px;
+}
+
+.claim-table .evidence-cell__quote {
+  display: block;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Severity Badges */
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.severity-badge--high {
+  background: rgba(192, 57, 43, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(192, 57, 43, 0.3);
+}
+
+.severity-badge--medium {
+  background: rgba(232, 168, 56, 0.12);
+  color: var(--accent-warning);
+  border: 1px solid rgba(232, 168, 56, 0.3);
+}
+
+.severity-badge--low {
+  background: rgba(39, 174, 96, 0.1);
+  color: var(--accent-success);
+  border: 1px solid rgba(39, 174, 96, 0.25);
+}
+
+/* Use in Email button */
+.btn-claim-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-claim-email:hover {
+  border-color: var(--accent-primary);
+  background: rgba(108, 92, 231, 0.12);
+  color: white;
+  box-shadow: 0 0 12px rgba(108, 92, 231, 0.15);
+}
+
+.btn-claim-email:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Email Preview Expansion */
+.claim-email-preview {
+  animation: fadeInUp 0.35s ease;
+}
+
+.claim-email-preview__inner {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-top: var(--space-sm);
+}
+
+.claim-email-preview__subject {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.claim-email-preview__body {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  margin-bottom: var(--space-md);
+}
+
+.claim-email-preview__actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.claim-email-preview__actions .btn {
+  font-size: 0.8rem;
+  padding: 6px 16px;
+}
+
+.claim-copied-toast {
+  font-size: 0.78rem;
+  color: var(--accent-success);
+  font-weight: 600;
+  animation: fadeInUp 0.3s ease;
+}
+
+/* Mobile: collapse table to cards */
+@media (max-width: 768px) {
+  .claim-table,
+  .claim-table thead,
+  .claim-table tbody,
+  .claim-table tr,
+  .claim-table td,
+  .claim-table th {
+    display: block;
+  }
+
+  .claim-table thead { display: none; }
+
+  .claim-table tbody tr {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .claim-table tbody td {
+    border-bottom: none;
+    padding: var(--space-xs) 0;
+  }
+
+  .claim-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+}

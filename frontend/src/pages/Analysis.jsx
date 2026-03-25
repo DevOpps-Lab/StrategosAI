@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { runAnalysis, generatePlan } from '../utils/api';
+import { runAnalysis, generatePlan, generateClaimEmail, sendSalesEmail } from '../utils/api';
 import { useGoogleLogin } from '@react-oauth/google';
 
 export default function Analysis({
@@ -19,6 +19,13 @@ export default function Analysis({
     const [analyzingAll, setAnalyzingAll] = useState(false);
     const [analyzeProgress, setAnalyzeProgress] = useState('');
     const navigate = useNavigate();
+
+    // --- Claim vs Reality Email State ---
+    const [claimEmailLoading, setClaimEmailLoading] = useState(null); // index of row being generated
+    const [claimEmails, setClaimEmails] = useState({}); // { [index]: { subject, body } }
+    const [claimCopied, setClaimCopied] = useState(null);
+    const [claimSending, setClaimSending] = useState(null);
+    const [claimSendResult, setClaimSendResult] = useState(null);
 
     // --- Google Calendar Export ---
     const [isExportingCalendar, setIsExportingCalendar] = useState(false);
@@ -142,6 +149,51 @@ export default function Analysis({
         if (score >= 80) return 'var(--accent-danger)';
         if (score >= 50) return 'var(--accent-warning)';
         return 'var(--accent-success)';
+    };
+
+    const severityEmoji = { high: '🔴', medium: '🟡', low: '🟢' };
+
+    const handleClaimEmail = async (index, gap) => {
+        setClaimEmailLoading(index);
+        try {
+            const result = await generateClaimEmail(activeCompetitorId, {
+                claim: gap.claim,
+                reality: gap.reality,
+                evidence: gap.evidence || [],
+                gap_severity: gap.gap_severity || 'medium',
+            });
+            setClaimEmails(prev => ({ ...prev, [index]: result }));
+        } catch (err) {
+            setError(err.message || 'Failed to generate claim email');
+        } finally {
+            setClaimEmailLoading(null);
+        }
+    };
+
+    const handleCopyClaimEmail = (index) => {
+        const email = claimEmails[index];
+        if (!email) return;
+        navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`);
+        setClaimCopied(index);
+        setTimeout(() => setClaimCopied(null), 2500);
+    };
+
+    const handleSendClaimEmail = async (index) => {
+        const email = claimEmails[index];
+        if (!email) return;
+        const recipient = prompt('Enter recipient email:');
+        if (!recipient) return;
+        setClaimSending(index);
+        setClaimSendResult(null);
+        try {
+            await sendSalesEmail(recipient, email.subject, email.body);
+            setClaimSendResult({ index, status: 'success', message: `Sent to ${recipient}` });
+            setTimeout(() => setClaimSendResult(null), 5000);
+        } catch (err) {
+            setClaimSendResult({ index, status: 'error', message: err.message });
+        } finally {
+            setClaimSending(null);
+        }
     };
 
     return (
@@ -305,19 +357,103 @@ export default function Analysis({
                         </div>
                     </div>
 
-                    {/* Marketing Vs Reality */}
+                    {/* ── Claim vs Reality Table ─────────────────────── */}
                     {analysisData.marketing_vs_reality_gaps?.length > 0 && (
                         <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
-                            <div className="section-title">🎭 Marketing vs Reality Gaps</div>
-                            <div className="grid-2">
-                                {analysisData.marketing_vs_reality_gaps.map((gap, i) => (
-                                    <div key={i} className="glass-card" style={{ padding: 'var(--space-md)' }}>
-                                        <div style={{ color: 'var(--accent-warning)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Claim</div>
-                                        <p style={{ fontSize: '0.9rem', marginBottom: 'var(--space-md)', color: 'var(--text-primary)' }}>"{gap.claim}"</p>
-                                        <div style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Reality</div>
-                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{gap.reality}</p>
-                                    </div>
-                                ))}
+                            <div className="section-title">🎭 Claim vs Reality</div>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-lg)', lineHeight: 1.5 }}>
+                                Gaps between marketing claims and what their own customers say — ready-made competitive ammunition for your sales team.
+                            </p>
+
+                            <div className="claim-table-wrapper">
+                                <table className="claim-table" id="claim-vs-reality-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Marketing Claim</th>
+                                            <th>Contradicting Evidence</th>
+                                            <th>Gap Severity</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {analysisData.marketing_vs_reality_gaps.map((gap, i) => (
+                                            <tr key={i}>
+                                                <td className="claim-cell" data-label="Marketing Claim">
+                                                    "{gap.claim}"
+                                                </td>
+                                                <td className="evidence-cell" data-label="Contradicting Evidence">
+                                                    {gap.reality}
+                                                    {(gap.evidence || []).map((ev, j) => (
+                                                        <span key={j} className="evidence-cell__quote">"{ev}"</span>
+                                                    ))}
+                                                </td>
+                                                <td data-label="Gap Severity">
+                                                    <span className={`severity-badge severity-badge--${gap.gap_severity || 'medium'}`}>
+                                                        {severityEmoji[gap.gap_severity] || '🟡'} {gap.gap_severity || 'medium'}
+                                                    </span>
+                                                </td>
+                                                <td data-label="Action">
+                                                    {claimEmails[i] ? (
+                                                        <div className="claim-email-preview">
+                                                            <button
+                                                                className="btn-claim-email"
+                                                                onClick={() => setClaimEmails(prev => { const copy = { ...prev }; delete copy[i]; return copy; })}
+                                                                style={{ marginBottom: 8 }}
+                                                            >
+                                                                ✕ Close
+                                                            </button>
+                                                            <div className="claim-email-preview__inner">
+                                                                <div className="claim-email-preview__subject">
+                                                                    📧 {claimEmails[i].subject}
+                                                                </div>
+                                                                <div className="claim-email-preview__body">
+                                                                    {claimEmails[i].body}
+                                                                </div>
+                                                                <div className="claim-email-preview__actions">
+                                                                    <button className="btn btn-primary" onClick={() => handleCopyClaimEmail(i)}>
+                                                                        📋 Copy
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-success"
+                                                                        onClick={() => handleSendClaimEmail(i)}
+                                                                        disabled={claimSending === i}
+                                                                    >
+                                                                        {claimSending === i ? '⏳ Sending...' : '🚀 Send'}
+                                                                    </button>
+                                                                    {claimCopied === i && (
+                                                                        <span className="claim-copied-toast">✅ Copied!</span>
+                                                                    )}
+                                                                    {claimSendResult?.index === i && (
+                                                                        <span style={{
+                                                                            fontSize: '0.78rem',
+                                                                            fontWeight: 600,
+                                                                            color: claimSendResult.status === 'success' ? 'var(--accent-success)' : 'var(--accent-danger)'
+                                                                        }}>
+                                                                            {claimSendResult.status === 'success' ? '✅' : '❌'} {claimSendResult.message}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            className="btn-claim-email"
+                                                            onClick={() => handleClaimEmail(i, gap)}
+                                                            disabled={claimEmailLoading === i}
+                                                            id={`claim-email-btn-${i}`}
+                                                        >
+                                                            {claimEmailLoading === i ? (
+                                                                <><span className="loading-spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> Generating...</>
+                                                            ) : (
+                                                                <>📧 Use in Sales Email</>
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}

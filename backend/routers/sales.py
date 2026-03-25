@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from database import get_db
 from models import Competitor, Company
-from agents.sales import generate_sales_sequence
+from agents.sales import generate_sales_sequence, generate_claim_email
 
 # We need a way to get the analysis data. The `AnalysisResult` isn't saved directly as JSON, 
 # but we can re-create a brief summary or in this hackathon context, we might accept the data from the frontend 
@@ -98,3 +98,40 @@ async def send_sales_email(req: SalesSendRequest):
     except Exception as e:
         print(f"SMTP Error: {e}")
         raise HTTPException(status_code=500, detail=f"Email failed to send. Check SMTP credentials. Error: {str(e)}")
+
+
+class ClaimEmailRequest(BaseModel):
+    claim: str
+    reality: str
+    evidence: list[str] = []
+    gap_severity: str = "medium"
+
+@router.post("/claim-email/{competitor_id}")
+async def generate_claim_email_endpoint(competitor_id: int, req: ClaimEmailRequest, db: AsyncSession = Depends(get_db)):
+    """Generate a single sales email anchored on a marketing-vs-reality gap."""
+    result = await db.execute(select(Competitor).where(Competitor.id == competitor_id))
+    competitor = result.scalar_one_or_none()
+    if not competitor:
+        raise HTTPException(status_code=404, detail="Competitor not found")
+
+    result = await db.execute(select(Company).where(Company.id == competitor.company_id))
+    company = result.scalar_one_or_none()
+
+    comp_name = company.name if company else "Our Company"
+    val_prop = company.positioning.get("value_proposition", "") if company and company.positioning else ""
+    features = ", ".join([f.get("name", str(f)) for f in company.features]) if company and company.features else ""
+
+    try:
+        email = await generate_claim_email(
+            company_name=comp_name,
+            value_prop=val_prop,
+            our_features=features,
+            competitor_name=competitor.name or competitor.url,
+            claim=req.claim,
+            reality=req.reality,
+            evidence=req.evidence,
+            gap_severity=req.gap_severity,
+        )
+        return email
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

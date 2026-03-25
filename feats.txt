@@ -1,0 +1,51 @@
+This project, **Compy**, is a full-stack **Multi-Agent Competitive Intelligence Platform**. It is designed to act as an automated strategy and research assistant for businesses, allowing them to instantly analyze their market positioning against competitors using LLMs (Large Language Models), web scraping, and data synthesis.
+
+Here are the complete details of its architecture, tech stack, and core features:
+
+### 🛠️ Tech Stack
+*   **Backend:** Python with **FastAPI**. It handles asynchronous API requests, background scraping tasks, and Server-Sent Events (SSE) for real-time progress updates.
+*   **Database:** SQLite using **SQLAlchemy** (async) to store companies, competitors, scraped intelligence, and analysis results.
+*   **Frontend:** **React.js** powered by **Vite**. Features highly interactive, data-rich visualizations using `react-chartjs-2` (Chart.js), dynamic layouts, and a sleek dark-mode UI. 
+*   **AI Integration:** Deep integration with AI models (via Langchain/Google Gemini) to analyze raw text and extract structured strategic intelligence.
+
+---
+
+### 🚀 Core Features & Agent Workflows
+
+#### 1. Identity / DNA Extraction (Your Company)
+When you onboard into the app, you provide your company's website URL. A background agent (`dna_extractor.py`) crawls your homepage and key subpages (like pricing and features). The AI then extracts your **"DNA Profile"**:
+*   Ideal Customer Profile (ICP)
+*   Core Value Propositions
+*   Pricing Models
+*   Key Features
+
+#### 2. The Scout Agent (Competitor Intel Gathering)
+You add a competitor's URL, and the **Scout Agent** goes to work in the background, scraping various intelligence sources concurrently:
+*   **Website Crawling:** Scrapes the competitor's main pages to map out their product and pricing.
+*   **Review Platforms:** Scrapes **Trustpilot** and **G2** to fetch star ratings, public reputation, and recurring negative themes/complaints.
+*   **Ad Libraries:** Scrapes **Meta (Facebook) Ads** and **Google Ads Transparency** to see how aggressively the competitor is running ads and what their core marketing hooks are.
+*   **Community Intelligence:** Deep-scans **HackerNews** and **Reddit** to find organic mentions, track sentiment, and identify "switching signals" (e.g., users complaining and looking for alternatives).
+
+#### 3. The Analyst Agent (Synthesis)
+Once the Scout finishes gathering raw data, the **Analyst Agent** digests the information to generate structured competitive intelligence:
+*   **Feature Gaps:** Analyzes what features they have that you don't (They Win) and what you have that they lack (We Win).
+*   **Pricing Intelligence:** Compares pricing models and community perceptions of their price.
+*   **Strategic Radar Mapping:** Scores the competitor on a 0-100 scale across 6 vectors: Features, Pricing, Market Position, Growth Trajectory, Enterprise Readiness, and Community Strength.
+*   **Inferred Roadmap:** Guesses what the competitor is building next based on recent job postings, news, and site changes.
+
+#### 4. The Strategic Dashboard & Compare View
+The frontend visualizes all this data beautifully:
+*   **Battle Cards:** A direct side-by-side comparison of your value prop vs. theirs.
+*   **Radar Charts:** Multi-axis charts plotting your strengths against the competitor's scores.
+*   **Ad Aggressiveness:** Horizontal bar charts plotting how many active ads competitors are running to gauge their marketing spend.
+*   **Objections Overlap Table:** A matrix showing which competitors suffer from specific customer objections (e.g., "Hard to use", "Too expensive").
+*   **Market Intelligence:** A live feed displaying the absolute latest financial news headline fetched directly from **MoneyControl**.
+*   **PDF Export:** The entire dashboard can be downloaded as a high-quality PDF report using `html2canvas` and `jsPDF`.
+
+#### 5. Actionable Outcomes (Sales & Planning)
+Compy doesn't just show data; it helps you act on it:
+*   **Sales Sequence Generator:** The AI can generate targeted cold email sequences designed to poach a competitor's customers by specifically attacking their known weaknesses (derived from feature gaps and Trustpilot complaints).
+*   **Google Calendar Integration:** Any strategic tasks or roadmap adjustments recommended by the AI can be pushed directly to your Google Calendar using Google OAuth.
+
+#### 6. AI ChatBot (The Strategist)
+A floating interactive ChatBot available natively in the app. It possesses the full context of the scraped review data, ad intelligence, and feature gaps. You can interrogate the bot with queries like *"What are their customers complaining about most?"* or *"Write a rebuttal for when a lead mentions their pricing"*, and the AI responses will be fully backed by the crawled data.

@@ -89,3 +89,83 @@ async def generate_sales_sequence(
             result = {"sequence": []}
 
     return result
+
+
+# ── Single-Claim Email Generator ──────────────────────────────────────
+
+CLAIM_EMAIL_PROMPT = """You are an elite B2B sales copywriter. Write a SHORT, legally-safe cold email 
+that uses a specific gap between a competitor's marketing claim and what their own customers say.
+
+## OUR COMPANY
+Name: {company_name}
+Value Proposition: {value_prop}
+Features: {our_features}
+
+## THE COMPETITOR: {competitor_name}
+
+## THE GAP WE ARE EXPLOITING
+Marketing Claim: "{claim}"
+What Their Customers Actually Say: "{reality}"
+Customer Evidence Quotes: {evidence}
+Gap Severity: {gap_severity}
+
+## RULES
+1. The email must be under 120 words.
+2. Lead with the pain point, NOT with our product.
+3. Reference the competitor's gap WITHOUT naming the competitor directly — use phrases like "your current tool" or "some platforms".
+4. Use the customer evidence as social proof (e.g. "users on review sites report...").
+5. Position our company ({company_name}) as the alternative ONCE, near the end.
+6. Casual, founder-to-founder tone. No buzzwords, no corporate speak.
+7. This must be LEGALLY SAFE: only reference publicly available customer reviews, never fabricate claims.
+8. Sign off as a representative of {company_name}.
+
+Return valid JSON ONLY:
+{{
+  "subject": "Catchy subject line referencing the pain point",
+  "body": "Hi {{First Name}},\\n\\nEmail body...\\n\\nBest,\\n[Your Name]\\n{company_name}"
+}}"""
+
+
+async def generate_claim_email(
+    company_name: str,
+    value_prop: str,
+    our_features: str,
+    competitor_name: str,
+    claim: str,
+    reality: str,
+    evidence: list[str],
+    gap_severity: str,
+) -> dict:
+    """Generate a single sales email anchored on a marketing-vs-reality gap."""
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    prompt = CLAIM_EMAIL_PROMPT.format(
+        company_name=company_name,
+        value_prop=value_prop,
+        our_features=our_features,
+        competitor_name=competitor_name,
+        claim=claim,
+        reality=reality,
+        evidence=json.dumps(evidence),
+        gap_severity=gap_severity,
+    )
+
+    response = await model.generate_content_async(
+        prompt,
+        generation_config=genai.GenerationConfig(
+            temperature=0.7,
+            response_mime_type="application/json",
+        ),
+    )
+
+    try:
+        result = json.loads(response.text)
+    except json.JSONDecodeError:
+        text = response.text
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start >= 0 and end > start:
+            result = json.loads(text[start:end])
+        else:
+            result = {"subject": "", "body": ""}
+
+    return result
