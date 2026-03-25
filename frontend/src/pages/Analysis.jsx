@@ -358,13 +358,17 @@ export default function Analysis({
                     </div>
 
                     {/* ── Claim vs Reality Table ─────────────────────── */}
-                    {analysisData.marketing_vs_reality_gaps?.length > 0 && (
-                        <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
-                            <div className="section-title">🎭 Claim vs Reality</div>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-lg)', lineHeight: 1.5 }}>
-                                Gaps between marketing claims and what their own customers say — ready-made competitive ammunition for your sales team.
-                            </p>
+                    <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                        <div className="section-title">🎭 Claim vs Reality</div>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-lg)', lineHeight: 1.5 }}>
+                            Gaps between marketing claims and what their own customers say — ready-made competitive ammunition for your sales team.
+                        </p>
 
+                        {!analysisData.marketing_vs_reality_gaps || analysisData.marketing_vs_reality_gaps.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-lg)' }}>
+                                <p>No major marketing vs reality gaps detected from the current data sources.</p>
+                            </div>
+                        ) : (
                             <div className="claim-table-wrapper">
                                 <table className="claim-table" id="claim-vs-reality-table">
                                     <thead>
@@ -455,8 +459,8 @@ export default function Analysis({
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Generate Plan Button */}
                     {!planData && (
