@@ -38,10 +38,10 @@ export const addCompetitor = (url, companyId) =>
     request('/competitor/add', { method: 'POST', body: { url, company_id: companyId } });
 
 export const getCompetitor = (id) =>
-    request(`/competitor/${id}`);
+    request(`/competitor/${id}`, { cache: 'no-store' });
 
 export const listCompetitors = (companyId) =>
-    request(`/competitor/company/${companyId}`);
+    request(`/competitor/company/${companyId}`, { cache: 'no-store' });
 
 // --- Analysis ---
 export const runAnalysis = (competitorId) =>

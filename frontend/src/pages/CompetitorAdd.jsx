@@ -33,6 +33,25 @@ export default function CompetitorAdd({
         }
     }, [logs]);
 
+    // Bulletproof fallback: actively poll the status if we are crawling
+    useEffect(() => {
+        if (!crawlingCompId) return;
+
+        const interval = setInterval(() => {
+            getCompetitor(crawlingCompId).then((comp) => {
+                if (comp.status === 'crawled' || comp.status === 'failed') {
+                    setLoading(false);
+                    onCompetitorUpdated(comp);
+                    if (comp.status === 'crawled' || comp.status === 'failed') {
+                        setCrawlingCompId(null);
+                    }
+                }
+            }).catch(() => {});
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [crawlingCompId, onCompetitorUpdated]);
+
     const getLogType = (event) => {
         switch (event) {
             case 'crawl': return 'info';
@@ -74,6 +93,9 @@ export default function CompetitorAdd({
 
                 if (event.event === 'done') {
                     setLoading(false);
+                    // Optimistic update guarantees UI reacts immediately and shows the button
+                    onCompetitorUpdated({ id: comp.id, status: 'crawled' });
+                    
                     getCompetitor(comp.id).then((updated) => {
                         onCompetitorUpdated(updated);
                     }).catch(() => { });

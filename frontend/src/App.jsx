@@ -23,8 +23,8 @@ function App() {
 
     const addCompetitorToList = (comp) => {
         setCompetitors((prev) => {
-            const exists = prev.find((c) => c.id === comp.id);
-            if (exists) return prev.map((c) => (c.id === comp.id ? { ...c, ...comp } : c));
+            const exists = prev.find((c) => String(c.id) === String(comp.id));
+            if (exists) return prev.map((c) => (String(c.id) === String(comp.id) ? { ...c, ...comp } : c));
             return [...prev, comp];
         });
         if (!activeCompetitorId) setActiveCompetitorId(comp.id);
@@ -32,7 +32,7 @@ function App() {
 
     const updateCompetitorInList = (comp) => {
         setCompetitors((prev) =>
-            prev.map((c) => (c.id === comp.id ? { ...c, ...comp } : c))
+            prev.map((c) => (String(c.id) === String(comp.id) ? { ...c, ...comp } : c))
         );
     };
 
