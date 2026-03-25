@@ -70,17 +70,32 @@ def send_escalation_email(employee: dict, threat_data: dict, classification: dic
         return False
 
 def send_whatsapp_message(employee: dict, threat_data: dict, classification: dict):
-    """Dispatches a strategic escalation via WhatsApp."""
-    print(f"\n\033[1;32m💬 DISPATCHING WHATSAPP\033[0m")
-    print(f"\033[1;36mTO:\033[0m {employee['name']} ({employee['phone']}) - Dept: {employee['department']}")
+    """Dispatches a strategic escalation via WhatsApp using Twilio Sandbox."""
     
     if not employee.get('phone'):
+        print(f"\033[1;33m⚠️  WHATSAPP SKIPPED — No phone for {employee['name']}\033[0m")
         logger.warning(f"No phone number for {employee['name']}. Skipping WhatsApp.")
         return False
         
     if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
+        print(f"\033[1;33m⚠️  WHATSAPP SIMULATED — Twilio credentials not set\033[0m")
         logger.warning("Twilio credentials missing. Simulated WhatsApp send.")
         return True
+    
+    target_number = employee['phone'].strip()
+    if not target_number.startswith('+'):
+        target_number = '+' + target_number
+
+    # Use the Twilio WhatsApp Sandbox number (default) or a configured WhatsApp-enabled number
+    from_number = getattr(settings, 'TWILIO_WHATSAPP_NUMBER', '') or 'whatsapp:+14155238886'
+    if not from_number.startswith('whatsapp:'):
+        from_number = f"whatsapp:{from_number}"
+
+    print(f"\n\033[1;32m{'═' * 60}\033[0m")
+    print(f"\033[1;32m💬 DISPATCHING WHATSAPP ESCALATION\033[0m")
+    print(f"\033[1;36mFROM:\033[0m {from_number}")
+    print(f"\033[1;36mTO:\033[0m {employee['name']} (whatsapp:{target_number}) — {employee['department']}")
+    print(f"\033[1;32m{'═' * 60}\033[0m")
         
     try:
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
@@ -91,21 +106,24 @@ def send_whatsapp_message(employee: dict, threat_data: dict, classification: dic
             f"The AI Engine has flagged a competitive threat routed to *{employee['department']}*.\n\n"
             f"*Competitor:* {threat_data.get('competitor')}\n"
             f"*Issue:* {threat_data.get('threat_title')}\n"
+            f"*Severity:* {threat_data.get('severity', 'N/A').upper()}\n"
             f"*AI Priority:* {classification.get('priority', 'HIGH').upper()}\n\n"
-            f"_{classification.get('reason', 'Review the dashboard for details.')}_"
+            f"_{classification.get('reason', 'Review the dashboard for details.')}_\n\n"
+            f"— StrategosAI Engine"
         )
-        
-        target_number = employee['phone']
-        if not target_number.startswith('+'):
-            target_number = '+' + target_number
             
         message = client.messages.create(
-            from_="whatsapp:+14155238886",
+            from_=from_number,
             body=message_body,
             to=f"whatsapp:{target_number}"
         )
-        logger.info(f"Successfully sent WhatsApp message to {target_number} (SID: {message.sid})")
+        print(f"\033[1;32m✅ WhatsApp SENT → SID: {message.sid}\033[0m\n")
+        logger.info(f"Successfully sent WhatsApp to {target_number} (SID: {message.sid})")
         return True
     except Exception as e:
-        logger.error(f"WhatsApp Error: {e}")
+        error_msg = str(e)
+        print(f"\033[1;31m❌ WhatsApp FAILED → {error_msg}\033[0m")
+        if "not a valid WhatsApp" in error_msg or "sandbox" in error_msg.lower():
+            print(f"\033[1;33m💡 TIP: Recipient must first send 'join <keyword>' to +14155238886 on WhatsApp to opt into the Twilio Sandbox.\033[0m\n")
+        logger.error(f"WhatsApp Error for {target_number}: {e}")
         return False

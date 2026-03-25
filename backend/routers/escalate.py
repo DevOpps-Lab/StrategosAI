@@ -42,9 +42,16 @@ async def escalate_threat(request: EscalateRequest, background_tasks: Background
     
     if not employees:
         raise HTTPException(status_code=500, detail="No employees found in the database to escalate to.")
-        
-    # We will escalate to everyone in that department for now
-    notified_emails = []
+    
+    # Snapshot employee data BEFORE any commits (avoids SQLAlchemy session expiry)
+    recipients = []
+    for emp in employees:
+        recipients.append({
+            "name": emp.name, 
+            "email": emp.email, 
+            "department": emp.department, 
+            "phone": emp.phone or ""
+        })
     
     # 3. Create Escalation record in DB
     new_escalation = Escalation(
@@ -58,20 +65,26 @@ async def escalate_threat(request: EscalateRequest, background_tasks: Background
     await db.commit()
     await db.refresh(new_escalation)
     
-    for emp in employees:
-        notified_emails.append(emp.email)
-        # 4. Trigger the background email task
-        emp_dict = {"name": emp.name, "email": emp.email, "department": emp.department, "phone": emp.phone}
-        background_tasks.add_task(fire_and_forget_escalation, request, emp_dict, classification)
+    notified_emails = [r["email"] for r in recipients]
+    notified_phones = [r["phone"] for r in recipients if r["phone"]]
+    
+    for r in recipients:
+        background_tasks.add_task(fire_and_forget_escalation, request, r, classification)
         
     # Update DB record with emails and mark sent
     new_escalation.notified_emails = ", ".join(notified_emails)
     new_escalation.status = "sent"
     await db.commit()
     
+    print(f"\n\033[1;35m📋 ESCALATION RESPONSE: {len(recipients)} recipients dispatched\033[0m")
+    
     return {
         "status": "success", 
         "departments": target_depts, 
         "notified": len(notified_emails),
-        "reason": classification.get("reason", "")
+        "notified_phones": len(notified_phones),
+        "channels": ["email", "whatsapp"] if notified_phones else ["email"],
+        "reason": classification.get("reason", ""),
+        "priority": classification.get("priority", "high"),
+        "recipients": recipients,
     }

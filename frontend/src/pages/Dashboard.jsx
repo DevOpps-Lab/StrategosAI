@@ -51,33 +51,8 @@ export default function Dashboard({
     const [activeTab, setActiveTab] = useState('overview');
 
     // --- Strategic Threat Escalation State ---
-    const [escalationStatus, setEscalationStatus] = useState({}); // { [signalTitle]: 'idle' | 'loading' | 'success' | 'error' }
-    
-    const handleEscalate = async (signal) => {
-        setEscalationStatus(prev => ({ ...prev, [signal.title]: 'loading' }));
-        try {
-            const competitorLabel = analysisData?.competitor_name || 'Competitor';
-            const res = await fetch(`http://localhost:8000/api/escalate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    threat_title: signal.title,
-                    threat_description: signal.description,
-                    severity: signal.severity_score >= 80 ? 'critical' : 'moderate',
-                    competitor: competitorLabel,
-                }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setEscalationStatus(prev => ({ ...prev, [signal.title]: data.department }));
-            } else {
-                setEscalationStatus(prev => ({ ...prev, [signal.title]: 'error' }));
-            }
-        } catch (e) {
-            console.error('Escalation failed', e);
-            setEscalationStatus(prev => ({ ...prev, [signal.title]: 'error' }));
-        }
-    };
+    const [escalationStatus, setEscalationStatus] = useState({}); // { __MASTER__: 'idle' | 'loading' | 'success_...' | 'error' }
+    const [escalationResult, setEscalationResult] = useState(null); // stores full API response on success
 
     // --- Sales Sequence state ---
     const reportRef = useRef(null);
@@ -505,56 +480,7 @@ export default function Dashboard({
             {/* Signal Heatmap */}
             <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
                 <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <span>🔥 Signal Severity Heatmap</span>
-                        {threats.length > 0 && (
-                            <button 
-                                disabled={escalationStatus['__MASTER__'] === 'loading' || escalationStatus['__MASTER__']?.includes('Sent')}
-                                onClick={async () => {
-                                    setEscalationStatus(prev => ({ ...prev, __MASTER__: 'loading' }));
-                                    try {
-                                        const combinedThreatTitle = `Strategic Threat Escalation: ${threats.length} Threats Detected`;
-                                        const combinedDescription = threats.map(t => `- **${t.title}** (Score: ${t.severity_score}): ${t.description}`).join('\n\n');
-                                        
-                                        const res = await fetch(`http://localhost:8000/api/escalate`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                threat_title: combinedThreatTitle,
-                                                threat_description: combinedDescription.slice(0, 1500), // Protect LLM token counts
-                                                severity: 'critical',
-                                                competitor: analysisData?.competitor_name || 'Competitor',
-                                            }),
-                                        });
-                                        const data = await res.json();
-                                        if (res.ok) {
-                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: `Sent to ${data.departments.join(', ')}` }));
-                                        } else {
-                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
-                                        }
-                                    } catch (e) {
-                                        setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
-                                    }
-                                }}
-                                style={{
-                                    padding: '6px 14px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 700,
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    background: escalationStatus['__MASTER__']?.includes('Sent') ? '#10b981' : 'var(--accent-danger)',
-                                    color: '#fff',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
-                                }}>
-                                {escalationStatus['__MASTER__'] === 'loading' ? '⏳ Dispatching...' : 
-                                 escalationStatus['__MASTER__'] === 'error' ? '❌ Failed' : 
-                                 escalationStatus['__MASTER__']?.includes('Sent') ? `✅ ${escalationStatus['__MASTER__']}` : 
-                                 '🚀 Escalate Top Threats'}
-                            </button>
-                        )}
-                    </div>
+                    <span>🔥 Signal Severity Heatmap</span>
                     <div style={{ display: 'flex', gap: 'var(--space-md)', fontSize: '0.75rem' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b' }}></div> Critical</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-warning)' }}></div> Moderate</span>
@@ -568,8 +494,6 @@ export default function Dashboard({
                         const sevLevel = isThreat ? (isExistential ? 'existential' : 'moderate') : 'opportunity';
                         const icon = isExistential ? '🚨' : isThreat ? '⚠️' : '💡';
                         const score = isThreat ? signal.severity_score : null;
-                        const escStatus = escalationStatus[signal.title];
-                        const isEscalated = escStatus && escStatus !== 'idle' && escStatus !== 'error' && escStatus !== 'loading';
 
                         return (
                             <div className={`heatmap-cell heatmap-cell--${sevLevel}`} key={i} title={signal.description} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -592,12 +516,268 @@ export default function Dashboard({
                                         </div>
                                     )}
                                 </div>
-                                
                             </div>
                         );
                     })}
                 </div>
             </div>
+
+            {/* ========== ESCALATION COMMAND CENTER ========== */}
+            {threats.length > 0 && (
+                <div className="glass-card--static" style={{ 
+                    marginBottom: 'var(--space-xl)', 
+                    borderLeft: escalationResult ? '4px solid #10b981' : '4px solid #ef4444',
+                    background: escalationResult ? 'rgba(16, 185, 129, 0.03)' : 'var(--bg-glass)',
+                    transition: 'all 0.4s ease'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--space-lg)', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 260 }}>
+                            <div className="section-title" style={{ marginBottom: 'var(--space-xs)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                🚀 Threat Escalation Center
+                            </div>
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 var(--space-md) 0', lineHeight: 1.6 }}>
+                                AI classifies the threat and automatically alerts the right department heads via <strong>📧 Email</strong> and <strong>💬 WhatsApp</strong>.
+                            </p>
+                            {/* Channel badges */}
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: 'var(--space-md)' }}>
+                                <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                                    📧 Email Alerts
+                                </span>
+                                <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600, background: 'rgba(37, 211, 102, 0.1)', color: '#25d366', border: '1px solid rgba(37, 211, 102, 0.25)' }}>
+                                    💬 WhatsApp Alerts
+                                </span>
+                                <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 600, background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.25)' }}>
+                                    🤖 AI Routing
+                                </span>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                            <button 
+                                id="escalate-threats-btn"
+                                disabled={escalationStatus['__MASTER__'] === 'loading' || !!escalationResult}
+                                onClick={async () => {
+                                    setEscalationStatus(prev => ({ ...prev, __MASTER__: 'loading' }));
+                                    setEscalationResult(null);
+                                    try {
+                                        const combinedThreatTitle = `Strategic Threat Escalation: ${threats.length} Threats Detected`;
+                                        const combinedDescription = threats.map(t => `- **${t.title}** (Score: ${t.severity_score}): ${t.description}`).join('\n\n');
+                                        
+                                        const res = await fetch(`http://localhost:8000/api/escalate`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                threat_title: combinedThreatTitle,
+                                                threat_description: combinedDescription.slice(0, 1500),
+                                                severity: 'critical',
+                                                competitor: analysisData?.competitor_name || 'Competitor',
+                                            }),
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            setEscalationResult(data);
+                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: 'success' }));
+                                        } else {
+                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
+                                        }
+                                    } catch (e) {
+                                        console.error('Escalation failed', e);
+                                        setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
+                                    }
+                                }}
+                                style={{
+                                    padding: '10px 24px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    cursor: escalationResult ? 'default' : 'pointer',
+                                    background: escalationResult ? 'linear-gradient(135deg, #10b981, #059669)' : 
+                                               escalationStatus['__MASTER__'] === 'loading' ? 'linear-gradient(135deg, #f59e0b, #d97706)' :
+                                               'linear-gradient(135deg, #ef4444, #dc2626)',
+                                    color: '#fff',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: escalationResult ? '0 4px 20px rgba(16, 185, 129, 0.4)' : '0 4px 20px rgba(239, 68, 68, 0.4)',
+                                    opacity: escalationResult ? 0.9 : 1,
+                                    letterSpacing: '0.3px',
+                                }}>
+                                {escalationStatus['__MASTER__'] === 'loading' ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1rem' }}>⏳</span>
+                                        AI Classifying & Dispatching...
+                                    </span>
+                                ) : escalationResult ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        ✅ Escalation Dispatched
+                                    </span>
+                                ) : (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        🚀 Escalate {threats.length} Threat{threats.length !== 1 ? 's' : ''} Now
+                                    </span>
+                                )}
+                            </button>
+                            {escalationStatus['__MASTER__'] === 'error' && (
+                                <button 
+                                    onClick={() => setEscalationStatus(prev => ({ ...prev, __MASTER__: 'idle' }))}
+                                    style={{
+                                        padding: '6px 16px', fontSize: '0.75rem', fontWeight: 600,
+                                        border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px',
+                                        background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', cursor: 'pointer'
+                                    }}>
+                                    ❌ Failed — Click to Retry
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Success Result Panel */}
+                    {escalationResult && (
+                        <div style={{ 
+                            marginTop: 'var(--space-md)', 
+                            borderRadius: 'var(--radius-md)', 
+                            overflow: 'hidden',
+                            border: '1px solid rgba(201, 169, 110, 0.25)',
+                            animation: 'fadeInUp 0.4s ease'
+                        }}>
+                            {/* Header bar */}
+                            <div style={{ 
+                                background: 'linear-gradient(135deg, #1a1a2e 0%, #2d2d4e 100%)', 
+                                padding: '14px 20px', 
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '1.3rem' }}>{'\u2705'}</span>
+                                    <div>
+                                        <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem' }}>Escalation Dispatched Successfully</div>
+                                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>
+                                            {escalationResult.notified} people alerted via {(escalationResult.channels || []).join(' + ')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <span style={{ 
+                                        padding: '3px 12px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+                                        background: (escalationResult.priority || '').toLowerCase() === 'critical' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                                        color: (escalationResult.priority || '').toLowerCase() === 'critical' ? '#ff6b6b' : '#fbbf24',
+                                        border: `1px solid ${(escalationResult.priority || '').toLowerCase() === 'critical' ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'}`,
+                                    }}>{escalationResult.priority || 'HIGH'} Priority</span>
+                                    {(escalationResult.channels || []).map((ch, i) => (
+                                        <span key={i} style={{ 
+                                            padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                                            background: ch === 'whatsapp' ? 'rgba(37, 211, 102, 0.2)' : 'rgba(96, 165, 250, 0.2)',
+                                            color: ch === 'whatsapp' ? '#4ade80' : '#93c5fd',
+                                        }}>{ch === 'whatsapp' ? '\ud83d\udcac WhatsApp' : '\ud83d\udce7 Email'}</span>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Departments routed */}
+                            <div style={{ 
+                                padding: '12px 20px', 
+                                background: 'rgba(201, 169, 110, 0.06)', 
+                                borderBottom: '1px solid rgba(201, 169, 110, 0.12)',
+                                display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'
+                            }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Routed To:</span>
+                                {(escalationResult.departments || []).map((dept, i) => {
+                                    const deptColors = {
+                                        'Product': { bg: 'rgba(168, 85, 247, 0.12)', color: '#a855f7', border: 'rgba(168, 85, 247, 0.3)' },
+                                        'Engineering': { bg: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6', border: 'rgba(59, 130, 246, 0.3)' },
+                                        'Marketing': { bg: 'rgba(236, 72, 153, 0.12)', color: '#ec4899', border: 'rgba(236, 72, 153, 0.3)' },
+                                        'Sales': { bg: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' },
+                                        'Customer Success': { bg: 'rgba(6, 182, 212, 0.12)', color: '#06b6d4', border: 'rgba(6, 182, 212, 0.3)' },
+                                        'Leadership': { bg: 'rgba(201, 169, 110, 0.15)', color: '#c9a96e', border: 'rgba(201, 169, 110, 0.3)' },
+                                    };
+                                    const dc = deptColors[dept] || { bg: 'rgba(107,114,128,0.1)', color: '#6b7280', border: 'rgba(107,114,128,0.2)' };
+                                    return (
+                                        <span key={i} style={{ 
+                                            padding: '4px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700,
+                                            background: dc.bg, color: dc.color, border: `1px solid ${dc.border}`
+                                        }}>{dept}</span>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Recipient Cards */}
+                            <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.4)' }}>
+                                <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                                    Team Members Notified
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                                    {(escalationResult.recipients || []).map((person, i) => {
+                                        const avatarGradients = [
+                                            'linear-gradient(135deg, #a855f7, #6366f1)',
+                                            'linear-gradient(135deg, #06b6d4, #3b82f6)',
+                                            'linear-gradient(135deg, #f59e0b, #ef4444)',
+                                            'linear-gradient(135deg, #10b981, #14b8a6)',
+                                            'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                                            'linear-gradient(135deg, #c9a96e, #8a6914)',
+                                        ];
+                                        const deptColors = {
+                                            'Product': '#a855f7', 'Engineering': '#3b82f6', 'Marketing': '#ec4899',
+                                            'Sales': '#f59e0b', 'Customer Success': '#06b6d4', 'Leadership': '#c9a96e',
+                                        };
+                                        return (
+                                            <div key={i} style={{ 
+                                                display: 'flex', alignItems: 'center', gap: '12px',
+                                                padding: '12px 14px', borderRadius: 'var(--radius-sm)', 
+                                                background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                                                transition: 'all 0.2s ease',
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-glow)'; e.currentTarget.style.boxShadow = 'var(--shadow-glow)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.boxShadow = 'none'; }}
+                                            >
+                                                {/* Avatar */}
+                                                <div style={{
+                                                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                                                    background: avatarGradients[i % avatarGradients.length],
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: '0.85rem', fontWeight: 800, color: '#fff',
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                                }}>
+                                                    {(person.name || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                                {/* Info */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{person.name}</span>
+                                                        <span style={{ 
+                                                            padding: '1px 7px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700,
+                                                            background: `${deptColors[person.department] || '#6b7280'}18`,
+                                                            color: deptColors[person.department] || '#6b7280',
+                                                        }}>{person.department}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                        <span>{'\ud83d\udce7'} {person.email}</span>
+                                                        {person.phone && <span>{'\ud83d\udcf1'} {person.phone}</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            {/* AI Reasoning Footer */}
+                            {escalationResult.reason && (
+                                <div style={{ 
+                                    padding: '12px 20px', 
+                                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.04), rgba(201, 169, 110, 0.06))',
+                                    borderTop: '1px solid rgba(201, 169, 110, 0.12)',
+                                    display: 'flex', alignItems: 'flex-start', gap: '8px'
+                                }}>
+                                    <span style={{ fontSize: '1rem', flexShrink: 0, marginTop: '1px' }}>{'\ud83e\udd16'}</span>
+                                    <div>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '2px' }}>AI Classification Reasoning</div>
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, fontStyle: 'italic' }}>
+                                            "{escalationResult.reason}"
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
             </>
             )}
 
