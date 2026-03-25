@@ -343,6 +343,15 @@ export default function Dashboard({
                 </p>
             </div>
 
+            {/* Business Sandbox Entry */}
+            <div className="sandbox-entry-card" onClick={() => navigate('/sandbox')}>
+                <span className="sandbox-entry-icon">🧪</span>
+                <div className="sandbox-entry-text">
+                    <h3>Business Sandbox</h3>
+                    <p>Simulate market moves before you make them — powered by swarm intelligence.</p>
+                </div>
+            </div>
+
             {/* Dashboard Tabs */}
             <div className="dashboard-tabs">
                 <button className={`dashboard-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>

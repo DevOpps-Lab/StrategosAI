@@ -6,6 +6,7 @@ import CompetitorAdd from './pages/CompetitorAdd';
 import Analysis from './pages/Analysis';
 import Dashboard from './pages/Dashboard';
 import CompareView from './pages/CompareView';
+import Sandbox from './pages/Sandbox';
 import ChatBot from './components/ChatBot';
 import { getReviews, getAds, getCommunityIntel } from './utils/api';
 
@@ -96,6 +97,11 @@ function App() {
                                             Dashboard
                                         </NavLink>
                                     </li>
+                                    <li>
+                                        <NavLink to="/sandbox">
+                                            Sandbox
+                                        </NavLink>
+                                    </li>
                                 </ul>
 
                             </nav>
@@ -167,6 +173,15 @@ function App() {
                                             ) : (
                                                 <Navigate to="/" replace />
                                             )
+                                        }
+                                    />
+                                    <Route
+                                        path="/sandbox"
+                                        element={
+                                            <Sandbox
+                                                companyId={companyId}
+                                                companyData={companyData}
+                                            />
                                         }
                                     />
                                     <Route

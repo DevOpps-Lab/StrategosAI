@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
     DESTINATION_PHONE_NUMBER: str = os.getenv("DESTINATION_PHONE_NUMBER", "")
 
+    # MiroFish integration (Phase 2)
+    MIROFISH_BACKEND_URL: str = os.getenv("MIROFISH_BACKEND_URL", "http://localhost:5001")
+    USE_MIROFISH: bool = os.getenv("USE_MIROFISH", "false").lower() == "true"
+
     class Config:
         env_file = ".env"
 

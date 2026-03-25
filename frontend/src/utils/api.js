@@ -172,6 +172,18 @@ export const getAds = (competitorId) =>
 
 export const getCommunityIntel = (competitorId) =>
     request(`/competitor/${competitorId}/community-intel`);
+
+// --- Sandbox ---
+export const runSandboxSimulation = (companyId, competitorIds, scenario, predictionQuestion) =>
+    request('/sandbox/simulate', {
+        method: 'POST',
+        body: {
+            company_id: companyId,
+            competitor_ids: competitorIds,
+            scenario,
+            prediction_question: predictionQuestion,
+        },
+    });
 // --- SSE Helper with job_id ---
 export function subscribeToStream(competitorId, onEvent, jobId = null) {
     // Use job_id endpoint if available (more reliable), otherwise fall back to competitor_id

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import init_db
-from routers import company, competitor, analysis, plan, monitor, compare, sales, chat, voice, escalate
+from routers import company, competitor, analysis, plan, monitor, compare, sales, chat, voice, escalate, sandbox
 from services.scheduler import start_scheduler, stop_scheduler
 
 # Configure logging — show SCOUT/CRAWL logs clearly
@@ -61,6 +61,7 @@ app.include_router(sales.router)
 app.include_router(chat.router)
 app.include_router(voice.router)
 app.include_router(escalate.router)
+app.include_router(sandbox.router)
 
 
 @app.get("/")

@@ -1686,4 +1686,599 @@ a:hover {
     color: var(--text-muted);
     margin-bottom: 4px;
   }
+}
+
+/* ========================================
+   BUSINESS SANDBOX STYLES
+   ======================================== */
+
+.sandbox-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* --- Input Phase --- */
+.sandbox-input-phase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.sandbox-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sandbox-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sandbox-select {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a8a9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+.sandbox-select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+}
+
+.sandbox-textarea {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  outline: none;
+  resize: vertical;
+  min-height: 100px;
+  transition: all var(--transition-fast);
+  line-height: 1.6;
+}
+
+.sandbox-textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+}
+
+.sandbox-textarea::placeholder,
+.sandbox-select::placeholder,
+.sandbox-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sandbox-input {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.sandbox-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-glow);
+}
+
+.sandbox-run-btn {
+  align-self: flex-start;
+  margin-top: var(--space-md);
+  padding: var(--space-md) var(--space-2xl);
+  font-size: 1.05rem;
+}
+
+/* --- Multi-Select Dropdown --- */
+.sandbox-multiselect {
+  position: relative;
+}
+
+.sandbox-multiselect-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  min-height: 48px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sandbox-multiselect-trigger:hover {
+  border-color: var(--border-glow);
+}
+
+.sandbox-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sandbox-selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.sandbox-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: var(--accent-primary-glow);
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sandbox-tag-remove {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-left: 2px;
+  line-height: 1;
+}
+
+.sandbox-tag-remove:hover {
+  color: var(--accent-danger);
+}
+
+.sandbox-chevron {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sandbox-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  animation: fadeInUp 0.2s ease;
+}
+
+.sandbox-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sandbox-dropdown-item:hover {
+  background: var(--bg-glass-hover);
+}
+
+.sandbox-dropdown-item.selected {
+  background: var(--accent-primary-glow);
+  font-weight: 600;
+}
+
+.sandbox-dropdown-empty {
+  padding: var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.sandbox-checkbox {
+  font-size: 1rem;
+}
+
+/* --- Loading Phase --- */
+.sandbox-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl) 0;
+  gap: var(--space-xl);
+}
+
+.sandbox-loading-orb {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sandbox-loading-ring {
+  position: absolute;
+  inset: 0;
+  border: 3px solid transparent;
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+}
+
+.sandbox-loading-ring--2 {
+  inset: 10px;
+  border-top-color: var(--accent-secondary);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+
+.sandbox-loading-ring--3 {
+  inset: 20px;
+  border-top-color: var(--accent-success);
+  animation-duration: 2.4s;
+}
+
+.sandbox-loading-icon {
+  font-size: 2.5rem;
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+.sandbox-loading-msg {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  animation: fadeIn 0.5s ease;
+}
+
+/* --- Error Phase --- */
+.sandbox-error {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3xl) 0;
+}
+
+.sandbox-error-card {
+  text-align: center;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.sandbox-error-icon {
+  font-size: 3rem;
+}
+
+.sandbox-error-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.sandbox-error-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* --- Results Phase --- */
+.sandbox-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.sandbox-section {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.sandbox-anim {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.sandbox-summary-card {
+  padding: var(--space-xl);
+}
+
+.sandbox-summary-card p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+/* --- Agent Cards --- */
+.sandbox-agents-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 700px) {
+  .sandbox-agents-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sandbox-agent-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: all var(--transition-base);
+  opacity: 0;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.sandbox-agent-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.sandbox-agent-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sandbox-agent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.sandbox-agent-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sandbox-agent-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.sandbox-agent-role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sandbox-agent-platform {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  background: var(--bg-glass);
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.sandbox-agent-comment {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-style: italic;
+}
+
+.sandbox-sentiment-badge {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* --- Market Score --- */
+.sandbox-score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+}
+
+.sandbox-score-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 5px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.sandbox-score-number {
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sandbox-score-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.sandbox-score-verdict {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.sandbox-score-explanation {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+/* --- Key Metrics --- */
+.sandbox-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+}
+
+@media (max-width: 800px) {
+  .sandbox-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.sandbox-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  transition: all var(--transition-base);
+}
+
+.sandbox-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-glow);
+}
+
+.sandbox-metric-icon {
+  font-size: 1.8rem;
+}
+
+.sandbox-metric-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.sandbox-metric-value {
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sandbox-metric-interp {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* --- Recommendations --- */
+.sandbox-recommendations {
+  padding: var(--space-xl);
+}
+
+.sandbox-recommendations ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.sandbox-recommendations li {
+  position: relative;
+  padding-left: var(--space-xl);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.sandbox-recommendations li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--accent-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* --- Bottom Actions --- */
+.sandbox-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-xl) 0 var(--space-3xl);
+}
+
+/* --- Dashboard Entry Button --- */
+.sandbox-entry-card {
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.08), rgba(26, 26, 46, 0.06));
+  border: 1px dashed var(--accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-bottom: var(--space-xl);
+}
+
+.sandbox-entry-card:hover {
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(26, 26, 46, 0.1));
+  border-color: var(--accent-secondary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.sandbox-entry-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+
+.sandbox-entry-text h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sandbox-entry-text p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
