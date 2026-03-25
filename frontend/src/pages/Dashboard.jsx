@@ -15,8 +15,6 @@ import {
 } from 'chart.js';
 import { Radar, Doughnut, Bar } from 'react-chartjs-2';
 import { generateSalesSequence, sendSalesEmail } from '../utils/api';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { useGoogleLogin } from '@react-oauth/google';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
@@ -50,6 +48,7 @@ export default function Dashboard({
     const radar = analysisData?.radar_scores || {};
     const roadmap = planData?.roadmap || [];
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('overview');
 
     // Monitoring and Alert states removed.
 
@@ -311,29 +310,43 @@ export default function Dashboard({
                 </div>
             )}
 
-            <div style={{ marginBottom: 'var(--space-xl)' }}>
+            <div style={{ marginBottom: 'var(--space-md)' }}>
                 <p className="page-subtitle" style={{ margin: 0 }}>
                     {companyData?.name || 'You'} vs {analysisData?.competitor_name || 'Competitor'} — Complete intelligence overview
                 </p>
             </div>
 
+            {/* Dashboard Tabs */}
+            <div className="dashboard-tabs">
+                <button className={`dashboard-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
+                <button className={`dashboard-tab ${activeTab === 'voc' ? 'active' : ''}`} onClick={() => setActiveTab('voc')}>Voice of Customer</button>
+                <button className={`dashboard-tab ${activeTab === 'action_plan' ? 'active' : ''}`} onClick={() => setActiveTab('action_plan')}>Action Plan</button>
+                <button className={`dashboard-tab ${activeTab === 'sales' ? 'active' : ''}`} onClick={() => setActiveTab('sales')}>Sales Outreach</button>
+            </div>
+
+            {activeTab === 'overview' && (
+                <>
             {/* Stats Row */}
             <div className="grid-4 stagger-children" style={{ marginBottom: 'var(--space-xl)' }}>
-                <div className="glass-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-danger)' }}>{threats.length}</div>
-                    <div className="label">Total Threats</div>
+                <div className="glass-card" style={{ textAlign: 'center', borderTop: '4px solid var(--accent-danger)' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-danger)', lineHeight: 1 }}>{threats.length}</div>
+                    <div className="label" style={{ marginTop: '8px' }}>Total Threats</div>
                 </div>
-                <div className="glass-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-success)' }}>{opportunities.length}</div>
-                    <div className="label">Total Opportunities</div>
+                <div className="glass-card" style={{ textAlign: 'center', borderTop: '4px solid var(--accent-success)' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💡</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-success)', lineHeight: 1 }}>{opportunities.length}</div>
+                    <div className="label" style={{ marginTop: '8px' }}>Total Opportunities</div>
                 </div>
-                <div className="glass-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ff4444' }}>{criticalThreats}</div>
-                    <div className="label">Critical Threats</div>
+                <div className="glass-card" style={{ textAlign: 'center', borderTop: '4px solid #ff4444' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🚨</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ff4444', lineHeight: 1 }}>{criticalThreats}</div>
+                    <div className="label" style={{ marginTop: '8px' }}>Critical Threats</div>
                 </div>
-                <div className="glass-card" style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-primary)' }}>{sentiment.overall_score || 0}%</div>
-                    <div className="label">Sentiment Score</div>
+                <div className="glass-card" style={{ textAlign: 'center', borderTop: '4px solid var(--accent-primary)' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>❤️</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-primary)', lineHeight: 1 }}>{sentiment.overall_score || 0}%</div>
+                    <div className="label" style={{ marginTop: '8px' }}>Sentiment Score</div>
                 </div>
             </div>
 
@@ -345,13 +358,20 @@ export default function Dashboard({
                         <div className="battle-cell battle-cell--header" />
                         <div className="battle-cell battle-cell--header">{companyData?.name || 'You'}</div>
                         <div className="battle-cell battle-cell--header">{analysisData?.competitor_name || 'Competitor'}</div>
-                        {battleRows.map((row, i) => (
-                            <div key={`row-${i}`} style={{ display: 'contents' }}>
-                                <div className="battle-cell battle-cell--label">{row.label}</div>
-                                <div className="battle-cell" style={{ fontSize: '0.8rem' }}>{row.you}</div>
-                                <div className="battle-cell" style={{ fontSize: '0.8rem' }}>{row.them}</div>
-                            </div>
-                        ))}
+                        {battleRows.map((row, i) => {
+                            let youColor = 'inherit';
+                            let themColor = 'inherit';
+                            if (row.label === 'Key Features We Win') { youColor = 'var(--accent-success)'; themColor = 'var(--text-muted)'; }
+                            if (row.label === 'Key Features They Win') { youColor = 'var(--text-muted)'; themColor = 'var(--accent-danger)'; }
+                            
+                            return (
+                                <div key={`row-${i}`} style={{ display: 'contents' }}>
+                                    <div className="battle-cell battle-cell--label">{row.label}</div>
+                                    <div className="battle-cell" style={{ fontSize: '0.85rem', fontWeight: 500, color: youColor }}>{row.you}</div>
+                                    <div className="battle-cell" style={{ fontSize: '0.85rem', fontWeight: 500, color: themColor }}>{row.them}</div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -417,7 +437,14 @@ export default function Dashboard({
 
             {/* Signal Heatmap */}
             <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
-                <div className="section-title">🔥 Signal Severity Heatmap</div>
+                <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>🔥 Signal Severity Heatmap</span>
+                    <div style={{ display: 'flex', gap: 'var(--space-md)', fontSize: '0.75rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b' }}></div> Critical</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-warning)' }}></div> Moderate</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-success)' }}></div> Opportunity</span>
+                    </div>
+                </div>
                 <div className="heatmap-grid">
                     {allSignals.map((signal, i) => {
                         const sevLevel = signal.type === 'threat' ? (signal.severity_score >= 80 ? 'existential' : 'moderate') : 'opportunity';
@@ -430,7 +457,11 @@ export default function Dashboard({
                     })}
                 </div>
             </div>
+            </>
+            )}
 
+            {activeTab === 'voc' && (
+            <>
             {/* ========== VOICE OF CUSTOMER PANEL ========== */}
             {(() => {
                 const competitorLabel = analysisData?.competitor_name || 'Competitor';
@@ -748,7 +779,11 @@ export default function Dashboard({
                     )}
                 </div>
             )}
+            </>
+            )}
 
+            {activeTab === 'action_plan' && (
+            <>
             {/* Roadmap Timeline */}
             {roadmap.length > 0 && (
                 <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
@@ -800,9 +835,11 @@ export default function Dashboard({
                     </div>
                 </div>
             )}
+            </>
+            )}
 
-
-
+            {activeTab === 'sales' && (
+            <>
             {/* ========== Sales Email Generator ========== */}
             <div className="glass-card" style={{ marginBottom: 'var(--space-xl)' }}>
                 <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -884,6 +921,8 @@ export default function Dashboard({
                     </div>
                 )}
             </div>
+            </>
+            )}
 
         </div>
     );
