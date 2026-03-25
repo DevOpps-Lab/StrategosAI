@@ -413,6 +413,12 @@ a:hover {
   gap: var(--space-lg);
 }
 
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-lg);
+}
+
 /* --- Animations --- */
 @keyframes fadeInUp {
   from {

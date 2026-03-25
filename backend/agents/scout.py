@@ -61,6 +61,8 @@ def _quick_classify_url(url: str) -> tuple:
         return "Case Study", 60
     elif any(kw in url_lower for kw in ["/compare", "/vs", "/alternative"]):
         return "Comparison", 85
+    elif any(kw in url_lower for kw in ["/changelog", "/releases", "/whats-new", "/updates"]):
+        return "Changelog", 90
     elif any(kw in url_lower for kw in ["/blog", "/post", "/article"]):
         return "Blog", 30
     elif any(kw in url_lower for kw in ["/careers", "/jobs", "/legal", "/terms", "/privacy", "/cookie"]):
@@ -73,7 +75,8 @@ def _quick_rank_links(links: list) -> list:
     strategic_keywords = [
         "pricing", "features", "product", "enterprise", "plans",
         "integrations", "about", "security", "api", "solutions",
-        "compare", "customers", "case-stud", "trust", "platform"
+        "compare", "customers", "case-stud", "trust", "platform",
+        "changelog", "releases", "whats-new", "updates"
     ]
     skip_keywords = [
         "blog", "careers", "jobs", "legal", "terms", "privacy",

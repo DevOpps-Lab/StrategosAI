@@ -157,11 +157,30 @@ async def _run_monitor_job(job: MonitorJob):
             # 5. Diff
             diff = _diff_signals(old_signal_dicts, new_signal_dicts)
 
-            # 6. Only create alert if something changed
+            # 6. Changelog Velocity Updates
+            shipping_vel = analysis.get("shipping_velocity", {})
+            recent_features = shipping_vel.get("recent_features_shipped", [])
+            vel_score = shipping_vel.get("score", 50)
+            velocity_changed = False
+            if recent_features:
+                feature_str = recent_features[0] if isinstance(recent_features, list) else recent_features
+                diff["new_signals"].append({
+                    "title": f"New Feature Shipped: {feature_str}",
+                    "signal_type": "threat",
+                    "severity": "moderate"
+                })
+                alert_text = f"Competitor {competitor.name} just shipped their {feature_str} feature! Their shipping velocity is now {vel_score}/100."
+                diff["summary"] = f"{alert_text} " + diff["summary"]
+                velocity_changed = True
+
+            competitor.shipping_velocity = max(0, min(100, int(vel_score)))
+
+            # 7. Only create alert if something changed
             has_changes = (
                 diff["new_signals"]
                 or diff["disappeared_signals"]
                 or diff["severity_changes"]
+                or velocity_changed
             )
 
             if has_changes:

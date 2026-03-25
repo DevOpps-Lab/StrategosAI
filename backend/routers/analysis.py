@@ -128,6 +128,12 @@ async def run_analysis(competitor_id: int, db: AsyncSession = Depends(get_db)):
     if comp_name and not competitor.name:
         competitor.name = comp_name
 
+    # Save shipping velocity score
+    shipping_vel_data = analysis.get("shipping_velocity", {})
+    if isinstance(shipping_vel_data, dict):
+        vel_score = shipping_vel_data.get("score", 50)
+        competitor.shipping_velocity = max(0, min(100, int(vel_score)))
+
     # Store signals mapped from threats and opportunities
     signals_data = analysis.get("signals", {})
     threats = signals_data.get("threats", [])

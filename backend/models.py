@@ -33,6 +33,7 @@ class Competitor(Base):
     url = Column(String(512), nullable=False)
     status = Column(String(50), default="pending")  # pending, crawling, crawled, analyzing, done
     page_count = Column(Integer, default=0)
+    shipping_velocity = Column(Integer, default=50) # 0-100 score based on changelog frequency
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

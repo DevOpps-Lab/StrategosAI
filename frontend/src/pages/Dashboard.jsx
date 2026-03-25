@@ -48,6 +48,10 @@ export default function Dashboard({
     const pricingIntel = analysisData?.pricing_intelligence || {};
     const sentiment = analysisData?.community_sentiment || {};
     const radar = analysisData?.radar_scores || {};
+    
+    // Feature Shipping Velocity
+    const shippingVel = analysisData?.shipping_velocity?.score ?? competitors.find(c => c.id === activeCompetitorId)?.shipping_velocity ?? 50;
+
     const roadmap = planData?.roadmap || [];
     const navigate = useNavigate();
 
@@ -330,7 +334,7 @@ export default function Dashboard({
             </div>
 
             {/* Stats Row */}
-            <div className="grid-4 stagger-children" style={{ marginBottom: 'var(--space-xl)' }}>
+            <div className="grid-5 stagger-children" style={{ marginBottom: 'var(--space-xl)' }}>
                 <div className="glass-card" style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-danger)' }}>{threats.length}</div>
                     <div className="label">Total Threats</div>
@@ -346,6 +350,10 @@ export default function Dashboard({
                 <div className="glass-card" style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-primary)' }}>{sentiment.overall_score || 0}%</div>
                     <div className="label">Sentiment Score</div>
+                </div>
+                <div className="glass-card" style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#06b6d4' }}>{shippingVel}/100</div>
+                    <div className="label">Shipping Velocity</div>
                 </div>
             </div>
 

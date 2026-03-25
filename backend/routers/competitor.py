@@ -32,6 +32,7 @@ class CompetitorResponse(BaseModel):
     url: str
     status: str
     page_count: int
+    shipping_velocity: int = 50
     company_id: int
     job_id: Optional[str] = None
 
@@ -331,6 +332,7 @@ async def add_competitor(req: CompetitorRequest, db: AsyncSession = Depends(get_
         url=competitor.url,
         status=competitor.status,
         page_count=competitor.page_count or 0,
+        shipping_velocity=competitor.shipping_velocity or 50,
         company_id=competitor.company_id,
         job_id=job_id,
     )
@@ -442,6 +444,7 @@ async def get_competitor(competitor_id: int, db: AsyncSession = Depends(get_db))
         url=competitor.url,
         status=competitor.status,
         page_count=competitor.page_count or 0,
+        shipping_velocity=competitor.shipping_velocity or 50,
         company_id=competitor.company_id,
         job_id=job_id,
     )
@@ -463,6 +466,7 @@ async def list_competitors(company_id: int, db: AsyncSession = Depends(get_db)):
             url=c.url,
             status=c.status,
             page_count=c.page_count or 0,
+            shipping_velocity=c.shipping_velocity or 50,
             company_id=c.company_id,
             job_id=_running_jobs.get(c.id),
         )

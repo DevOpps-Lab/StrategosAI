@@ -85,6 +85,13 @@ From [AD INTELLIGENCE DATA]:
 - Which value propositions appear most frequently
 - Any new offers or campaigns launched recently
 
+### STEP 8 — CALCULATE FEATURE SHIPPING VELOCITY
+Analyze the [WEB] and other sources for changelogs, release notes, or feature announcements.
+Determine how fast and frequently the competitor ships new high-impact features. 
+- Fast shippers with recent updates get higher scores (e.g. > 80).
+- Stagnant competitors get lower scores (< 40).
+Output a `shipping_velocity` object.
+
 ---
 
 ## STRICT OUTPUT RULES
@@ -146,6 +153,12 @@ From [AD INTELLIGENCE DATA]:
       "threat_level_to_us": 0
     }}
   ],
+
+  "shipping_velocity": {{
+    "score": 0,
+    "recent_features_shipped": ["list of recent features or updates shipped"],
+    "evidence": "brief explanation of why this score was given based on update frequency"
+  }},
 
   "community_sentiment": {{
     "overall_score": 0,
@@ -343,6 +356,7 @@ async def run_analyst(company_profile: dict, competitor_pages: list[dict], revie
                 "marketing_vs_reality_gaps": [],
                 "feature_gap_analysis": {"we_win": [], "they_win": [], "contested": []},
                 "pricing_intelligence": {"model": "Unknown", "community_price_perception": "Unknown"},
+                "shipping_velocity": {"score": 50, "recent_features_shipped": [], "evidence": "Error parsing velocity"},
                 "community_sentiment": {"overall_score": 50},
                 "radar_scores": {"features": 5, "pricing": 5, "market_position": 5, "growth_trajectory": 5, "enterprise_readiness": 5, "community_strength": 5}
             }
