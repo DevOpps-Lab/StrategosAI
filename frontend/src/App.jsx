@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useState } from 'react';
+import Landing from './pages/Landing';
 import Onboarding from './pages/Onboarding';
 import CompetitorAdd from './pages/CompetitorAdd';
 import Analysis from './pages/Analysis';
@@ -54,134 +55,155 @@ function App() {
 
     return (
         <BrowserRouter>
-            <div className="app-layout">
-                <nav className="navbar">
-                    <div className="navbar-brand">
-                        <div className="logo">⚡</div>
-                        <span>Compy</span>
-                    </div>
-                    <ul className="navbar-nav">
-                        <li><NavLink to="/" end>Onboard</NavLink></li>
-                        <li>
-                            <NavLink to="/competitor" className={!companyId ? 'disabled' : ''}>
-                                Scout {hasCompetitors ? `(${competitors.length})` : ''}
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/analysis" className={!hasCompetitors ? 'disabled' : ''}>
-                                Analyze
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/dashboard" className={!hasCompetitors ? 'disabled' : ''}>
-                                Dashboard
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/compare" className={!companyId ? 'disabled' : ''}>
-                                Compare
-                            </NavLink>
-                        </li>
-                    </ul>
-                </nav>
+            <Routes>
+                {/* Standalone Landing Page Route */}
+                <Route 
+                    path="/" 
+                    element={
+                        <Landing 
+                            onComplete={(company) => {
+                                setCompanyId(company.id);
+                                setCompanyData(company);
+                            }} 
+                        />
+                    } 
+                />
 
-                <div className="page-container">
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={
-                                <Onboarding
-                                    onComplete={(company) => {
-                                        setCompanyId(company.id);
-                                        setCompanyData(company);
-                                    }}
-                                    companyData={companyData}
+                {/* Main Application Routes */}
+                <Route 
+                    path="/*" 
+                    element={
+                        <div className="app-layout">
+                            <nav className="navbar">
+                                <div className="navbar-brand">
+                                    <div className="logo">🎯</div>
+                                    <span>StrategosAI</span>
+                                </div>
+                                <ul className="navbar-nav">
+                                    <li><NavLink to="/app" end>Onboard</NavLink></li>
+                                    <li>
+                                        <NavLink to="/competitor" className={!companyId ? 'disabled' : ''}>
+                                            Scout {hasCompetitors ? `(${competitors.length})` : ''}
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink to="/analysis" className={!hasCompetitors ? 'disabled' : ''}>
+                                            Analyze
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink to="/dashboard" className={!hasCompetitors ? 'disabled' : ''}>
+                                            Dashboard
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink to="/compare" className={!companyId ? 'disabled' : ''}>
+                                            Compare
+                                        </NavLink>
+                                    </li>
+                                </ul>
+                            </nav>
+
+                            <div className="page-container">
+                                <Routes>
+                                    <Route
+                                        path="/app"
+                                        element={
+                                            <Onboarding
+                                                onComplete={(company) => {
+                                                    setCompanyId(company.id);
+                                                    setCompanyData(company);
+                                                }}
+                                                companyData={companyData}
+                                            />
+                                        }
+                                    />
+                                    <Route
+                                        path="/competitor"
+                                        element={
+                                            companyId ? (
+                                                <CompetitorAdd
+                                                    companyId={companyId}
+                                                    competitors={competitors}
+                                                    onCompetitorAdded={addCompetitorToList}
+                                                    onCompetitorUpdated={updateCompetitorInList}
+                                                    onSelectCompetitor={setActiveCompetitorId}
+                                                    activeCompetitorId={activeCompetitorId}
+                                                />
+                                            ) : (
+                                                <Navigate to="/" replace />
+                                            )
+                                        }
+                                    />
+                                    <Route
+                                        path="/analysis"
+                                        element={
+                                            hasCompetitors ? (
+                                                <Analysis
+                                                    competitors={competitors}
+                                                    activeCompetitorId={activeCompetitorId}
+                                                    onSelectCompetitor={setActiveCompetitorId}
+                                                    analysisDataMap={analysisDataMap}
+                                                    planDataMap={planDataMap}
+                                                    onAnalysisComplete={(id, data) => setAnalysisData(id, data)}
+                                                    onPlanComplete={(id, data) => setPlanData(id, data)}
+                                                />
+                                            ) : (
+                                                <Navigate to="/" replace />
+                                            )
+                                        }
+                                    />
+                                    <Route
+                                        path="/dashboard"
+                                        element={
+                                            hasCompetitors ? (
+                                                <Dashboard
+                                                    competitors={competitors}
+                                                    activeCompetitorId={activeCompetitorId}
+                                                    onSelectCompetitor={setActiveCompetitorId}
+                                                    companyData={companyData}
+                                                    analysisDataMap={analysisDataMap}
+                                                    planDataMap={planDataMap}
+                                                    reviewDataMap={reviewDataMap}
+                                                    adDataMap={adDataMap}
+                                                    communityIntelMap={communityIntelMap}
+                                                />
+                                            ) : (
+                                                <Navigate to="/" replace />
+                                            )
+                                        }
+                                    />
+                                    <Route
+                                        path="/compare"
+                                        element={
+                                            companyId ? (
+                                                <CompareView
+                                                    companyId={companyId}
+                                                    companyData={companyData}
+                                                />
+                                            ) : (
+                                                <Navigate to="/" replace />
+                                            )
+                                        }
+                                    />
+                                </Routes>
+                            </div>
+
+                            {/* Global floating AI Analyst Chatbot - ONLY visible if analysis exists */}
+                            {activeAnalysis && (
+                                <ChatBot
+                                    competitorId={activeCompetitorId}
+                                    competitorName={competitors.find(c => c.id === activeCompetitorId)?.name || null}
+                                    analysisData={activeAnalysis}
+                                    reviewData={reviewDataMap[activeCompetitorId] || []}
+                                    adData={adDataMap[activeCompetitorId] || []}
+                                    communityIntelData={communityIntelMap[activeCompetitorId] || []}
                                 />
-                            }
-                        />
-                        <Route
-                            path="/competitor"
-                            element={
-                                companyId ? (
-                                    <CompetitorAdd
-                                        companyId={companyId}
-                                        competitors={competitors}
-                                        onCompetitorAdded={addCompetitorToList}
-                                        onCompetitorUpdated={updateCompetitorInList}
-                                        onSelectCompetitor={setActiveCompetitorId}
-                                        activeCompetitorId={activeCompetitorId}
-                                    />
-                                ) : (
-                                    <Navigate to="/" replace />
-                                )
-                            }
-                        />
-                        <Route
-                            path="/analysis"
-                            element={
-                                hasCompetitors ? (
-                                    <Analysis
-                                        competitors={competitors}
-                                        activeCompetitorId={activeCompetitorId}
-                                        onSelectCompetitor={setActiveCompetitorId}
-                                        analysisDataMap={analysisDataMap}
-                                        planDataMap={planDataMap}
-                                        onAnalysisComplete={(id, data) => setAnalysisData(id, data)}
-                                        onPlanComplete={(id, data) => setPlanData(id, data)}
-                                    />
-                                ) : (
-                                    <Navigate to="/" replace />
-                                )
-                            }
-                        />
-                        <Route
-                            path="/dashboard"
-                            element={
-                                hasCompetitors ? (
-                                    <Dashboard
-                                        competitors={competitors}
-                                        activeCompetitorId={activeCompetitorId}
-                                        onSelectCompetitor={setActiveCompetitorId}
-                                        companyData={companyData}
-                                        analysisDataMap={analysisDataMap}
-                                        planDataMap={planDataMap}
-                                        reviewDataMap={reviewDataMap}
-                                        adDataMap={adDataMap}
-                                        communityIntelMap={communityIntelMap}
-                                    />
-                                ) : (
-                                    <Navigate to="/" replace />
-                                )
-                            }
-                        />
-                        <Route
-                            path="/compare"
-                            element={
-                                companyId ? (
-                                    <CompareView
-                                        companyId={companyId}
-                                        companyData={companyData}
-                                    />
-                                ) : (
-                                    <Navigate to="/" replace />
-                                )
-                            }
-                        />
-                    </Routes>
-                </div>
-
-                {/* Global floating AI Analyst Chatbot - ONLY visible if analysis exists */}
-                {activeAnalysis && (
-                    <ChatBot
-                        competitorId={activeCompetitorId}
-                        competitorName={competitors.find(c => c.id === activeCompetitorId)?.name || null}
-                        analysisData={activeAnalysis}
-                        reviewData={reviewDataMap[activeCompetitorId] || []}
-                        adData={adDataMap[activeCompetitorId] || []}
-                        communityIntelData={communityIntelMap[activeCompetitorId] || []}
-                    />
-                )}
-            </div>
+                            )}
+                        </div>
+                    } 
+                />
+            </Routes>
         </BrowserRouter>
     );
 }

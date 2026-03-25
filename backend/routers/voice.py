@@ -44,7 +44,7 @@ async def trigger_executive_briefing(req: VoiceCallRequest, db: AsyncSession = D
 
     # 3. Generate the Spoken Summary using Gemini
     # We want a very conversational, natural-sounding summary optimized for TTS.
-    prompt = f"""You are the Compy AI Analyst calling an executive on the phone to give a quick intel briefing.
+    prompt = f"""You are the StrategosAI Analyst calling an executive on the phone to give a quick intel briefing.
 The competitor is: {competitor.name}.
 
 Here is the raw intelligence data:
@@ -52,7 +52,7 @@ Here is the raw intelligence data:
 
 Write a spoken script for a phone call. 
 Rules:
-- Start with "Hello! This is Compy AI with your executive briefing on {competitor.name}."
+- Start with "Hello! This is StrategosAI with your executive briefing on {competitor.name}."
 - Keep it under 60 seconds when spoken (about 120 words maximum).
 - Highlight their biggest weakness and their biggest strength.
 - Be highly engaging and conversational. Do not use bullet points or markdown, just natural sentences.
@@ -65,7 +65,7 @@ Rules:
         script = response.text.replace("\n", " ").strip()
     except Exception as e:
         print(f"[VOICE] Failed to generate script: {e}")
-        script = f"Hello! This is Compy AI. We encountered an error generating the detailed briefing for {competitor.name}. Please check the dashboard for the full report. Happy selling."
+        script = f"Hello! This is StrategosAI. We encountered an error generating the detailed briefing for {competitor.name}. Please check the dashboard for the full report. Happy selling."
 
     # 4. Trigger the Outbound Call via Twilio
     try:

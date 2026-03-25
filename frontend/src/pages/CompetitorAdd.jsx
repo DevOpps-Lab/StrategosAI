@@ -133,7 +133,7 @@ export default function CompetitorAdd({
 
             <h1 className="page-title">Scout Competitors</h1>
             <p className="page-subtitle">
-                Add competitor websites. Compy will intelligently crawl and classify their strategic pages.
+                Add competitor websites. StrategosAI will intelligently crawl and classify their strategic pages.
             </p>
 
             {/* Existing Competitors List */}

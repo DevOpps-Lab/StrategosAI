@@ -4,7 +4,7 @@ from config import settings
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
-CHAT_SYSTEM_PROMPT = """You are Compy AI, an elite Competitive Intelligence Analyst embedded inside the Compy platform.
+CHAT_SYSTEM_PROMPT = """You are StrategosAI, an elite Competitive Intelligence Analyst embedded inside the StrategosAI platform.
 You have been given a full intelligence dossier on a competitor. 
 Your job is to answer strategic sales, marketing, and product questions from the user's team in a concise, direct, and actionable manner.
 You are talking to a founder or a sales leader. Be sharp. No fluff. No disclaimers.
@@ -181,7 +181,7 @@ async def chat_with_analyst(competitor_id: int, context: dict, history: list, us
                     intelligence_summary = "\\n".join([f"- {s.signal_type.upper()}: {s.title} ({s.severity})" for s in signals])
                     
                     # 2. Generate Script
-                    prompt = f"You are the Compy AI Analyst calling an executive on the phone to give a quick intel briefing.\\nThe competitor is: {competitor.name}.\\n\\nHere is the raw intelligence data:\\n{intelligence_summary[:4000]}\\n\\nWrite a spoken script for a phone call. \\nRules:\\n- Start with 'Hello! This is Compy AI with your executive briefing on {competitor.name}.'\\n- Keep it under 60 seconds when spoken.\\n- Highlight their biggest weakness and their biggest strength.\\n- Be highly engaging and conversational. Do not use bullet points or markdown, just natural sentences.\\n- End with 'Thank you, and happy selling.'"
+                    prompt = f"You are the StrategosAI Analyst calling an executive on the phone to give a quick intel briefing.\\n\\nThe competitor is: {competitor.name}.\\n\\nHere is the raw intelligence data:\\n{intelligence_summary[:4000]}\\n\\nWrite a spoken script for a phone call. \\nRules:\\n- Start with 'Hello! This is StrategosAI with your executive briefing on {competitor.name}.'\\n- Keep it under 60 seconds when spoken.\\n- Highlight their biggest weakness and their biggest strength.\\n- Be highly engaging and conversational. Do not use bullet points or markdown, just natural sentences.\\n- End with 'Thank you, and happy selling.'"
                     
                     script_model = genai.GenerativeModel("gemini-2.5-flash")
                     script_resp = await script_model.generate_content_async(prompt)

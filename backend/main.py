@@ -1,4 +1,4 @@
-"""Compy Backend — FastAPI application entrypoint."""
+"""StrategosAI Backend — FastAPI application entrypoint."""
 
 import logging
 from contextlib import asynccontextmanager
@@ -27,15 +27,15 @@ async def lifespan(app: FastAPI):
     """Initialize database on startup."""
     await init_db()
     start_scheduler()
-    print("\n\033[1;36m╔══════════════════════════════════════════╗\033[0m")
-    print("\033[1;36m║   🚀 Compy Backend — Ready on :8000      ║\033[0m")
-    print("\033[1;36m╚══════════════════════════════════════════╝\033[0m\n")
+    print("\n\033[1;36m╔══════════════════════════════════════════════╗\033[0m")
+    print("\033[1;36m║   🚀 StrategosAI Backend — Ready on :8000    ║\033[0m")
+    print("\033[1;36m╚══════════════════════════════════════════════╝\033[0m\n")
     yield
     stop_scheduler()
 
 
 app = FastAPI(
-    title="Compy — Competitive Intelligence Engine",
+    title="StrategosAI — Competitive Intelligence Engine",
     description="Multi-agent competitive intelligence platform",
     version="0.1.0",
     lifespan=lifespan,
@@ -65,10 +65,10 @@ app.include_router(voice.router)
 @app.get("/")
 async def root():
     return {
-        "name": "Compy",
+        "name": "StrategosAI",
         "version": "0.1.0",
         "status": "operational",
-        "description": "Competitive Intelligence Engine — Multi-Agent Platform",
+        "description": "StrategosAI — Multi-Agent Competitive Intelligence Platform",
     }
 
 

@@ -1,34 +1,34 @@
 /* ========================================
-   COMPY DESIGN SYSTEM
-   Premium dark theme with glassmorphism
+   STRATEGOSAI DESIGN SYSTEM
+   Warm cream professional theme
    ======================================== */
 
 /* --- CSS Variables --- */
 :root {
-  /* Colors */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-card: rgba(20, 20, 32, 0.8);
-  --bg-card-hover: rgba(30, 30, 48, 0.9);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-hover: rgba(255, 255, 255, 0.06);
+  /* Colors — Warm Cream Professional */
+  --bg-primary: #f5f0e8;
+  --bg-secondary: #ece6da;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.5);
+  --bg-glass-hover: rgba(255, 255, 255, 0.7);
 
-  --text-primary: #f0f0f5;
-  --text-secondary: #8b8b9e;
-  --text-muted: #5a5a6e;
+  --text-primary: #1a1a2e;
+  --text-secondary: #555566;
+  --text-muted: #8a8a9a;
 
-  --accent-primary: #6c5ce7;
-  --accent-primary-glow: rgba(108, 92, 231, 0.3);
-  --accent-secondary: #00cec9;
-  --accent-secondary-glow: rgba(0, 206, 201, 0.3);
-  --accent-warning: #fdcb6e;
-  --accent-danger: #ff6b6b;
-  --accent-danger-glow: rgba(255, 107, 107, 0.3);
-  --accent-success: #00b894;
-  --accent-success-glow: rgba(0, 184, 148, 0.3);
+  --accent-primary: #c9a96e;
+  --accent-primary-glow: rgba(201, 169, 110, 0.2);
+  --accent-secondary: #1a1a2e;
+  --accent-secondary-glow: rgba(26, 26, 46, 0.15);
+  --accent-warning: #e8a838;
+  --accent-danger: #c0392b;
+  --accent-danger-glow: rgba(192, 57, 43, 0.15);
+  --accent-success: #27ae60;
+  --accent-success-glow: rgba(39, 174, 96, 0.15);
 
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-glow: rgba(108, 92, 231, 0.3);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(201, 169, 110, 0.4);
 
   /* Spacing */
   --space-xs: 4px;
@@ -50,10 +50,10 @@
   --radius-xl: 24px;
 
   /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 30px var(--accent-primary-glow);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 4px 20px rgba(201, 169, 110, 0.15);
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -85,7 +85,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle background grid */
+/* Subtle warm background texture */
 body::before {
   content: '';
   position: fixed;
@@ -94,9 +94,9 @@ body::before {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(0, 206, 201, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(255, 107, 107, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(201, 169, 110, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(26, 26, 46, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(201, 169, 110, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -128,7 +128,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-md) var(--space-xl);
-  background: rgba(10, 10, 15, 0.9);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -148,7 +148,7 @@ a:hover {
 .navbar-brand .logo {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -233,7 +233,7 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+  background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
   color: white;
   box-shadow: 0 4px 16px var(--accent-primary-glow);
 }
@@ -259,13 +259,13 @@ a:hover {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, var(--accent-success), #00d2d3);
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
   color: white;
   box-shadow: 0 4px 16px var(--accent-success-glow);
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, var(--accent-danger), #ee5a24);
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
   color: white;
   box-shadow: 0 4px 16px var(--accent-danger-glow);
 }
@@ -316,10 +316,7 @@ a:hover {
   font-weight: 800;
   letter-spacing: -1px;
   margin-bottom: var(--space-sm);
-  background: linear-gradient(135deg, var(--text-primary), var(--accent-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
@@ -356,45 +353,45 @@ a:hover {
 }
 
 .badge-threat {
-  background: rgba(255, 107, 107, 0.15);
+  background: rgba(192, 57, 43, 0.08);
   color: var(--accent-danger);
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  border: 1px solid rgba(192, 57, 43, 0.2);
 }
 
 .badge-opportunity {
-  background: rgba(0, 184, 148, 0.15);
+  background: rgba(39, 174, 96, 0.08);
   color: var(--accent-success);
-  border: 1px solid rgba(0, 184, 148, 0.3);
+  border: 1px solid rgba(39, 174, 96, 0.2);
 }
 
 .badge-existential {
-  background: rgba(255, 50, 50, 0.2);
-  color: #ff4444;
-  border: 1px solid rgba(255, 50, 50, 0.4);
+  background: rgba(192, 57, 43, 0.12);
+  color: #c0392b;
+  border: 1px solid rgba(192, 57, 43, 0.3);
 }
 
 .badge-moderate {
-  background: rgba(253, 203, 110, 0.15);
+  background: rgba(232, 168, 56, 0.08);
   color: var(--accent-warning);
-  border: 1px solid rgba(253, 203, 110, 0.3);
+  border: 1px solid rgba(232, 168, 56, 0.2);
 }
 
 .badge-minor {
-  background: rgba(0, 206, 201, 0.15);
+  background: rgba(26, 26, 46, 0.06);
   color: var(--accent-secondary);
-  border: 1px solid rgba(0, 206, 201, 0.3);
+  border: 1px solid rgba(26, 26, 46, 0.15);
 }
 
 .badge-defensive {
-  background: rgba(108, 92, 231, 0.15);
-  color: var(--accent-primary);
-  border: 1px solid rgba(108, 92, 231, 0.3);
+  background: rgba(201, 169, 110, 0.1);
+  color: #8a7340;
+  border: 1px solid rgba(201, 169, 110, 0.3);
 }
 
 .badge-offensive {
-  background: rgba(0, 206, 201, 0.15);
+  background: rgba(26, 26, 46, 0.06);
   color: var(--accent-secondary);
-  border: 1px solid rgba(0, 206, 201, 0.3);
+  border: 1px solid rgba(26, 26, 46, 0.15);
 }
 
 /* --- Grid --- */
@@ -546,8 +543,8 @@ a:hover {
 
 /* --- Terminal --- */
 .terminal {
-  background: #0d1117;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1a1a2e;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: var(--radius-lg);
   overflow: hidden;
   font-family: var(--font-mono);
@@ -559,8 +556,8 @@ a:hover {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .terminal-dot {
@@ -741,21 +738,21 @@ a:hover {
 }
 
 .heatmap-cell--existential {
-  background: rgba(255, 50, 50, 0.25);
-  border: 1px solid rgba(255, 50, 50, 0.5);
-  color: #ff4444;
+  background: rgba(192, 57, 43, 0.1);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  color: #c0392b;
 }
 
 .heatmap-cell--moderate {
-  background: rgba(253, 203, 110, 0.2);
-  border: 1px solid rgba(253, 203, 110, 0.4);
+  background: rgba(232, 168, 56, 0.1);
+  border: 1px solid rgba(232, 168, 56, 0.3);
   color: var(--accent-warning);
 }
 
 .heatmap-cell--minor {
-  background: rgba(0, 206, 201, 0.15);
-  border: 1px solid rgba(0, 206, 201, 0.3);
-  color: var(--accent-secondary);
+  background: rgba(39, 174, 96, 0.08);
+  border: 1px solid rgba(39, 174, 96, 0.2);
+  color: var(--accent-success);
 }
 
 /* --- Timeline --- */

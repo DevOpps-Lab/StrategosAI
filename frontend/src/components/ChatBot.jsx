@@ -78,7 +78,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
     const [messages, setMessages] = useState([
         {
             role: 'assistant',
-            content: `👋 I'm Compy AI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
+            content: `👋 I'm StrategosAI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
         }
     ]);
     const [inputValue, setInputValue] = useState('');
@@ -97,7 +97,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
     useEffect(() => {
         setMessages([{
             role: 'assistant',
-            content: `👋 I'm Compy AI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
+            content: `👋 I'm StrategosAI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
         }]);
     }, [competitorId, competitorName]);
 
@@ -178,7 +178,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                 }}
                 onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
                 onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                title="Ask Compy AI"
+                title="Ask StrategosAI"
             >
                 {isOpen ? '✕' : '🧠'}
             </button>
@@ -212,7 +212,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     }}>
                         <span style={{ fontSize: '1.2rem' }}>🧠</span>
                         <div>
-                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#fff' }}>Compy AI Analyst</div>
+                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#fff' }}>StrategosAI Analyst</div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--accent-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-success)', display: 'inline-block' }}></span>
                                 {competitorName ? `Briefed on ${competitorName}` : 'Online'}

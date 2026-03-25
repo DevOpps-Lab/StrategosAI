@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models for Compy."""
+"""SQLAlchemy ORM models for StrategosAI."""
 
 import datetime
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON

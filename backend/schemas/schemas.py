@@ -1,4 +1,4 @@
-"""Pydantic schemas for the Compy data collection pipeline."""
+"""Pydantic schemas for the StrategosAI data collection pipeline."""
 
 from datetime import datetime
 from typing import Optional

@@ -585,7 +585,7 @@ def scrape_hackernews(competitor_name: str) -> dict | None:
             f"{query_name} alternative",
         ]
         headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; CompyBot/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; StrategosBot/1.0)",
         }
 
         all_hits = []
@@ -707,7 +707,7 @@ def scrape_reddit_deep(competitor_name: str) -> dict | None:
             "switching": f'"switched from {competitor_name}"',
         }
         headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; CompyBot/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; StrategosBot/1.0)",
         }
 
         reviews = []

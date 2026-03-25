@@ -38,9 +38,9 @@ export default function Onboarding({ onComplete, companyData }) {
                 <div className="step">📊 4. Dashboard</div>
             </div>
 
-            <h1 className="page-title">Tell Compy About Your Company</h1>
+            <h1 className="page-title">Tell StrategosAI About Your Company</h1>
             <p className="page-subtitle">
-                Enter your company's website URL. Compy will extract your DNA — features, positioning, pricing, and ideal customer profile.
+                Enter your company's website URL. StrategosAI will extract your DNA — features, positioning, pricing, and ideal customer profile.
             </p>
 
             {/* URL Input */}

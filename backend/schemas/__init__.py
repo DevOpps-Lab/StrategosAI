@@ -1,1 +1,1 @@
-"""Pydantic schemas for Compy data pipeline."""
+"""Pydantic schemas for StrategosAI data pipeline."""

@@ -1,5 +1,5 @@
 /**
- * Compy API client — fetch wrapper + SSE helper with polling fallback
+ * StrategosAI API client — fetch wrapper + SSE helper with polling fallback
  */
 
 const API_BASE = '/api';
