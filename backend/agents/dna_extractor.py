@@ -64,14 +64,33 @@ async def extract_company_dna(url: str, page_contents: list[dict]) -> dict:
     if len(combined) > 80000:
         combined = combined[:80000]
 
+    import asyncio
+    
     model = genai.GenerativeModel("gemini-2.5-flash")
-    response = await model.generate_content_async(
-        DNA_EXTRACTION_PROMPT.format(content=combined, url=url),
-        generation_config=genai.GenerationConfig(
-            temperature=0.2,
-            response_mime_type="application/json",
-        ),
-    )
+    
+    # Auto-retry logic for Gemini Free Tier 429 Quota limits
+    response = None
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = await model.generate_content_async(
+                DNA_EXTRACTION_PROMPT.format(content=combined, url=url),
+                generation_config=genai.GenerationConfig(
+                    temperature=0.2,
+                    response_mime_type="application/json",
+                ),
+            )
+            break
+        except Exception as e:
+            last_error = e
+            if "429" in str(e) and attempt < 2:
+                print(f"🚦 Gemini Rate Limit Hit (429). Sleeping 38 seconds before retry {attempt+1}/2...")
+                await asyncio.sleep(38)
+            else:
+                raise e
+    
+    if not response and last_error:
+        raise last_error
 
     try:
         result = json.loads(response.text)

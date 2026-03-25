@@ -196,3 +196,30 @@ class CommunityIntelData(Base):
     scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     competitor = relationship("Competitor", back_populates="community_intel")
+
+
+class Employee(Base):
+    """Team members for the Strategic Threat Escalation System."""
+    __tablename__ = "employees"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    role = Column(String(255), default="")
+    department = Column(String(100), nullable=False)  # Engineering, Product, Sales, Marketing, Customer Success, Leadership
+    email = Column(String(255), nullable=False)
+    phone = Column(String(50), default="")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class Escalation(Base):
+    """Log of a strategic threat escalated to the team."""
+    __tablename__ = "escalations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    threat_title = Column(String(512), nullable=False)
+    threat_description = Column(Text, default="")
+    severity = Column(String(50), default="moderate")
+    department_assigned = Column(String(100), default="")
+    notified_emails = Column(Text, default="")
+    status = Column(String(50), default="pending")  # pending, sent, failed
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)

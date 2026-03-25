@@ -81,7 +81,7 @@ async def send_sales_email(req: SalesSendRequest):
                 
             msg = MIMEText(html_body, 'html')
             msg['Subject'] = req.subject
-            msg['From'] = settings.FROM_EMAIL
+            msg['From'] = settings.FROM_EMAIL or settings.SMTP_USERNAME
             msg['To'] = req.recipient_email
 
             # Connect to SMTP server

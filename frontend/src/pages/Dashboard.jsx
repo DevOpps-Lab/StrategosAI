@@ -50,7 +50,34 @@ export default function Dashboard({
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Monitoring and Alert states removed.
+    // --- Strategic Threat Escalation State ---
+    const [escalationStatus, setEscalationStatus] = useState({}); // { [signalTitle]: 'idle' | 'loading' | 'success' | 'error' }
+    
+    const handleEscalate = async (signal) => {
+        setEscalationStatus(prev => ({ ...prev, [signal.title]: 'loading' }));
+        try {
+            const competitorLabel = analysisData?.competitor_name || 'Competitor';
+            const res = await fetch(`http://localhost:8000/api/escalate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    threat_title: signal.title,
+                    threat_description: signal.description,
+                    severity: signal.severity_score >= 80 ? 'critical' : 'moderate',
+                    competitor: competitorLabel,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setEscalationStatus(prev => ({ ...prev, [signal.title]: data.department }));
+            } else {
+                setEscalationStatus(prev => ({ ...prev, [signal.title]: 'error' }));
+            }
+        } catch (e) {
+            console.error('Escalation failed', e);
+            setEscalationStatus(prev => ({ ...prev, [signal.title]: 'error' }));
+        }
+    };
 
     // --- Sales Sequence state ---
     const reportRef = useRef(null);
@@ -469,7 +496,56 @@ export default function Dashboard({
             {/* Signal Heatmap */}
             <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
                 <div className="section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>🔥 Signal Severity Heatmap</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <span>🔥 Signal Severity Heatmap</span>
+                        {threats.length > 0 && (
+                            <button 
+                                disabled={escalationStatus['__MASTER__'] === 'loading' || escalationStatus['__MASTER__']?.includes('Sent')}
+                                onClick={async () => {
+                                    setEscalationStatus(prev => ({ ...prev, __MASTER__: 'loading' }));
+                                    try {
+                                        const combinedThreatTitle = `Strategic Threat Escalation: ${threats.length} Threats Detected`;
+                                        const combinedDescription = threats.map(t => `- **${t.title}** (Score: ${t.severity_score}): ${t.description}`).join('\n\n');
+                                        
+                                        const res = await fetch(`http://localhost:8000/api/escalate`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                threat_title: combinedThreatTitle,
+                                                threat_description: combinedDescription.slice(0, 1500), // Protect LLM token counts
+                                                severity: 'critical',
+                                                competitor: analysisData?.competitor_name || 'Competitor',
+                                            }),
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: `Sent to ${data.departments.join(', ')}` }));
+                                        } else {
+                                            setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
+                                        }
+                                    } catch (e) {
+                                        setEscalationStatus(prev => ({ ...prev, __MASTER__: 'error' }));
+                                    }
+                                }}
+                                style={{
+                                    padding: '6px 14px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    background: escalationStatus['__MASTER__']?.includes('Sent') ? '#10b981' : 'var(--accent-danger)',
+                                    color: '#fff',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
+                                }}>
+                                {escalationStatus['__MASTER__'] === 'loading' ? '⏳ Dispatching...' : 
+                                 escalationStatus['__MASTER__'] === 'error' ? '❌ Failed' : 
+                                 escalationStatus['__MASTER__']?.includes('Sent') ? `✅ ${escalationStatus['__MASTER__']}` : 
+                                 '🚀 Escalate Top Threats'}
+                            </button>
+                        )}
+                    </div>
                     <div style={{ display: 'flex', gap: 'var(--space-md)', fontSize: '0.75rem' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#c0392b' }}></div> Critical</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent-warning)' }}></div> Moderate</span>
@@ -483,25 +559,31 @@ export default function Dashboard({
                         const sevLevel = isThreat ? (isExistential ? 'existential' : 'moderate') : 'opportunity';
                         const icon = isExistential ? '🚨' : isThreat ? '⚠️' : '💡';
                         const score = isThreat ? signal.severity_score : null;
+                        const escStatus = escalationStatus[signal.title];
+                        const isEscalated = escStatus && escStatus !== 'idle' && escStatus !== 'error' && escStatus !== 'loading';
+
                         return (
-                            <div className={`heatmap-cell heatmap-cell--${sevLevel}`} key={i} title={signal.description}>
-                                <div style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</div>
-                                <div style={{ fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.35, textAlign: 'center' }}>
-                                    {signal.title}
-                                </div>
-                                {score !== null && (
-                                    <div style={{
-                                        marginTop: '2px',
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        padding: '1px 8px',
-                                        borderRadius: '100px',
-                                        background: isExistential ? 'rgba(192,57,43,0.15)' : 'rgba(232,168,56,0.15)',
-                                        letterSpacing: '0.3px'
-                                    }}>
-                                        Score {score}
+                            <div className={`heatmap-cell heatmap-cell--${sevLevel}`} key={i} title={signal.description} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</div>
+                                    <div style={{ fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.35, textAlign: 'center', margin: '4px 0' }}>
+                                        {signal.title}
                                     </div>
-                                )}
+                                    {score !== null && (
+                                        <div style={{
+                                            fontSize: '0.65rem',
+                                            fontWeight: 700,
+                                            padding: '1px 8px',
+                                            borderRadius: '100px',
+                                            background: isExistential ? 'rgba(192,57,43,0.15)' : 'rgba(232,168,56,0.15)',
+                                            letterSpacing: '0.3px',
+                                            marginBottom: 'var(--space-sm)'
+                                        }}>
+                                            Score {score}
+                                        </div>
+                                    )}
+                                </div>
+                                
                             </div>
                         );
                     })}
