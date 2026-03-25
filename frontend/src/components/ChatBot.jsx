@@ -165,7 +165,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     width: '56px',
                     height: '56px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--accent-primary), #a29bfe)',
+                    background: 'var(--accent)',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -192,10 +192,10 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     width: '380px',
                     maxHeight: '550px',
                     borderRadius: '16px',
-                    background: 'rgba(15, 15, 25, 0.97)',
+                    background: 'var(--bg-card)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(108, 92, 231, 0.4)',
-                    boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,92,231,0.2)',
+                    border: '1px solid var(--border-color)',
+                    boxShadow: 'var(--shadow-lg)',
                     display: 'flex',
                     flexDirection: 'column',
                     zIndex: 999,
@@ -204,17 +204,17 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     {/* Header */}
                     <div style={{
                         padding: '14px 18px',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                        borderBottom: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
-                        background: 'rgba(108, 92, 231, 0.1)',
+                        background: 'var(--bg-secondary)',
                     }}>
                         <span style={{ fontSize: '1.2rem' }}>🧠</span>
                         <div>
-                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#fff' }}>StrategosAI Analyst</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-success)', display: 'inline-block' }}></span>
+                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>StrategosAI Analyst</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }}></span>
                                 {competitorName ? `Briefed on ${competitorName}` : 'Online'}
                             </div>
                         </div>
@@ -239,10 +239,8 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                     maxWidth: '85%',
                                     padding: '10px 14px',
                                     borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                    background: msg.role === 'user'
-                                        ? 'linear-gradient(135deg, var(--accent-primary), #a29bfe)'
-                                        : 'rgba(255,255,255,0.06)',
-                                    color: '#fff',
+                                    background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-secondary)',
+                                    color: msg.role === 'user' ? '#fff' : 'var(--text-primary)',
                                     fontSize: '0.875rem',
                                     lineHeight: '1.5',
                                     whiteSpace: 'pre-wrap',
@@ -256,7 +254,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                 <div style={{
                                     padding: '12px 16px',
                                     borderRadius: '16px 16px 16px 4px',
-                                    background: 'rgba(255,255,255,0.06)',
+                                    background: 'var(--bg-secondary)',
                                     display: 'flex',
                                     gap: '4px',
                                     alignItems: 'center',
@@ -264,7 +262,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                     {[0, 1, 2].map(i => (
                                         <span key={i} style={{
                                             width: '6px', height: '6px', borderRadius: '50%',
-                                            background: 'var(--accent-primary)',
+                                            background: 'var(--accent)',
                                             animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                                             display: 'inline-block',
                                         }} />
@@ -290,16 +288,16 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                     style={{
                                         textAlign: 'left',
                                         padding: '8px 12px',
-                                        background: 'rgba(108, 92, 231, 0.1)',
-                                        border: '1px solid rgba(108, 92, 231, 0.25)',
+                                        background: 'transparent',
+                                        border: '1px solid var(--border-color)',
                                         borderRadius: '8px',
                                         color: 'var(--text-secondary)',
                                         fontSize: '0.8rem',
                                         cursor: 'pointer',
                                         transition: 'background 0.15s',
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(108, 92, 231, 0.2)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(108, 92, 231, 0.1)'}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                 >
                                     {q}
                                 </button>
@@ -310,10 +308,11 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     {/* Input */}
                     <div style={{
                         padding: '12px 16px',
-                        borderTop: '1px solid rgba(255,255,255,0.06)',
+                        borderTop: '1px solid var(--border-color)',
                         display: 'flex',
                         gap: '8px',
                         alignItems: 'flex-end',
+                        background: 'var(--bg-card)'
                     }}>
                         <textarea
                             ref={inputRef}
@@ -325,10 +324,10 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                             disabled={isLoading || !competitorId}
                             style={{
                                 flex: 1,
-                                background: 'rgba(255,255,255,0.06)',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                background: 'transparent',
+                                border: '1px solid var(--border-color)',
                                 borderRadius: '10px',
-                                color: '#fff',
+                                color: 'var(--text-primary)',
                                 padding: '10px 12px',
                                 fontSize: '0.875rem',
                                 resize: 'none',
@@ -347,13 +346,14 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                 height: '38px',
                                 borderRadius: '10px',
                                 background: inputValue.trim() && !isLoading
-                                    ? 'linear-gradient(135deg, var(--accent-primary), #a29bfe)'
-                                    : 'rgba(255,255,255,0.06)',
+                                    ? 'var(--accent)'
+                                    : 'var(--bg-secondary)',
                                 border: 'none',
                                 cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                color: inputValue.trim() && !isLoading ? '#fff' : 'var(--text-muted)',
                                 fontSize: '1rem',
                                 transition: 'background 0.2s',
                                 flexShrink: 0,

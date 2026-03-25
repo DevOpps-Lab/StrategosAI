@@ -83,7 +83,7 @@ function App() {
                                     <li><NavLink to="/app" end>Onboard</NavLink></li>
                                     <li>
                                         <NavLink to="/competitor" className={!companyId ? 'disabled' : ''}>
-                                            Scout {hasCompetitors ? `(${competitors.length})` : ''}
+                                            Scout
                                         </NavLink>
                                     </li>
                                     <li>
