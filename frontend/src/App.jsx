@@ -6,6 +6,7 @@ import Analysis from './pages/Analysis';
 import Dashboard from './pages/Dashboard';
 import CompareView from './pages/CompareView';
 import ChatBot from './components/ChatBot';
+import { getReviews, getAds, getCommunityIntel } from './utils/api';
 
 function App() {
     const [companyId, setCompanyId] = useState(null);
@@ -16,6 +17,9 @@ function App() {
     const [activeCompetitorId, setActiveCompetitorId] = useState(null);
     const [analysisDataMap, setAnalysisDataMap] = useState({});  // { competitorId: analysisResult }
     const [planDataMap, setPlanDataMap] = useState({});           // { competitorId: planResult }
+    const [reviewDataMap, setReviewDataMap] = useState({});       // { competitorId: [reviewRecords] }
+    const [adDataMap, setAdDataMap] = useState({});               // { competitorId: [adRecords] }
+    const [communityIntelMap, setCommunityIntelMap] = useState({}); // { competitorId: [communityIntelRecords] }
 
     const addCompetitorToList = (comp) => {
         setCompetitors((prev) => {
@@ -34,6 +38,10 @@ function App() {
 
     const setAnalysisData = (competitorId, data) => {
         setAnalysisDataMap((prev) => ({ ...prev, [competitorId]: data }));
+        // Auto-fetch review, ad, and community intel data when analysis completes
+        getReviews(competitorId).then(r => setReviewDataMap(prev => ({ ...prev, [competitorId]: r }))).catch(() => {});
+        getAds(competitorId).then(a => setAdDataMap(prev => ({ ...prev, [competitorId]: a }))).catch(() => {});
+        getCommunityIntel(competitorId).then(c => setCommunityIntelMap(prev => ({ ...prev, [competitorId]: c }))).catch(() => {});
     };
 
     const setPlanData = (competitorId, data) => {
@@ -137,6 +145,9 @@ function App() {
                                         companyData={companyData}
                                         analysisDataMap={analysisDataMap}
                                         planDataMap={planDataMap}
+                                        reviewDataMap={reviewDataMap}
+                                        adDataMap={adDataMap}
+                                        communityIntelMap={communityIntelMap}
                                     />
                                 ) : (
                                     <Navigate to="/" replace />
@@ -165,6 +176,9 @@ function App() {
                         competitorId={activeCompetitorId}
                         competitorName={competitors.find(c => c.id === activeCompetitorId)?.name || null}
                         analysisData={activeAnalysis}
+                        reviewData={reviewDataMap[activeCompetitorId] || []}
+                        adData={adDataMap[activeCompetitorId] || []}
+                        communityIntelData={communityIntelMap[activeCompetitorId] || []}
                     />
                 )}
             </div>

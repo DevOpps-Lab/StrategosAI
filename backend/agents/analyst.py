@@ -28,6 +28,12 @@ Key Features: {key_features}
 ## COMPETITOR RAW DATA
 {multi_source_scraped_data}
 
+## REVIEW PLATFORM DATA
+{review_platform_data}
+
+## AD INTELLIGENCE DATA
+{ad_intelligence_data}
+
 ---
 
 ## YOUR ANALYSIS INSTRUCTIONS
@@ -64,6 +70,20 @@ Look for their strengths that challenge us:
 - Pricing moves that undercut us
 - Partnerships or integrations that expand their moat
 - Talent hiring that signals a strategic pivot toward our core market
+
+### STEP 6 — ANALYZE REVIEW PATTERNS
+From [REVIEW PLATFORM DATA]:
+- Extract top customer objections (things they dislike = your sales ammunition)
+- Extract top praised features (things competitors do well = threats to neutralize)
+- Identify customer segments using the competitor (overlap with your ICP = targeting intel)
+- Use cases competitor is winning (feature gaps you need to close)
+
+### STEP 7 — ANALYZE AD STRATEGY
+From [AD INTELLIGENCE DATA]:
+- Primary messaging angles being tested
+- CTA strategies (are they pushing trial, demo, or direct purchase?)
+- Which value propositions appear most frequently
+- Any new offers or campaigns launched recently
 
 ---
 
@@ -182,9 +202,10 @@ Look for their strengths that challenge us:
 }}"""
 
 
-async def run_analyst(company_profile: dict, competitor_pages: list[dict]) -> dict:
+async def run_analyst(company_profile: dict, competitor_pages: list[dict], review_data: list = None, ad_data: list = None) -> dict:
     """
     Run differential analysis comparing company DNA vs competitor data using the advanced prompt.
+    Optionally includes review platform and ad library data.
     """
     company_name = company_profile.get("name", "Unknown Company")
     value_prop = company_profile.get("positioning", {}).get("value_proposition", "Unknown")
@@ -215,6 +236,58 @@ async def run_analyst(company_profile: dict, competitor_pages: list[dict]) -> di
         content = page["content_md"][:3000]  # Limit per page
         competitor_text += f"\n\n{tag} --- {page['title']} ({page['url']}) ---\n{content}"
 
+    # Build review platform data string
+    review_platform_str = "No review platform data available."
+    if review_data:
+        parts = []
+        for rd in review_data:
+            if rd.get("scraper_status") == "success":
+                src = rd.get("source", "unknown")
+                parts.append(f"Source: {src.upper()}")
+                parts.append(f"Rating: {rd.get('overall_rating', 'N/A')}/5")
+                parts.append(f"Review Count: {rd.get('review_count', 0)}")
+                if rd.get("likes"):
+                    parts.append(f"What customers LIKE: {', '.join(rd['likes'][:5])}")
+                if rd.get("dislikes"):
+                    parts.append(f"What customers DISLIKE: {', '.join(rd['dislikes'][:5])}")
+                if rd.get("use_cases"):
+                    parts.append(f"Use cases: {', '.join(rd['use_cases'][:5])}")
+                if rd.get("negative_themes"):
+                    parts.append(f"Recurring complaints: {', '.join(rd['negative_themes'])}")
+                if rd.get("reviewer_segments"):
+                    parts.append(f"Reviewer segments: {', '.join(rd['reviewer_segments'][:5])}")
+                parts.append("---")
+        if parts:
+            review_platform_str = "\n".join(parts)
+
+    # Build ad intelligence data string
+    ad_intelligence_str = "No ad intelligence data available."
+    if ad_data:
+        parts = []
+        for ad in ad_data:
+            if ad.get("scraper_status") == "success":
+                src = ad.get("source", "unknown")
+                parts.append(f"Source: {src.upper()}")
+                parts.append(f"Total ads found: {ad.get('total_ads_found', 0)}")
+                if ad.get("cta_distribution"):
+                    parts.append(f"CTA distribution: {ad['cta_distribution']}")
+                if ad.get("top_messaging_themes"):
+                    parts.append(f"Messaging themes: {', '.join(ad['top_messaging_themes'])}")
+                if ad.get("top_keywords"):
+                    parts.append(f"Top keywords: {', '.join(ad['top_keywords'])}")
+                if ad.get("headline_patterns"):
+                    parts.append(f"Headline patterns: {', '.join(ad['headline_patterns'])}")
+                sample_ads = ad.get("ads", [])[:5]
+                for sa in sample_ads:
+                    headline = sa.get("headline", "")
+                    body = sa.get("body", sa.get("description", ""))
+                    cta = sa.get("cta", "")
+                    if headline:
+                        parts.append(f"  Ad: \"{headline}\" | CTA: {cta} | Body: {body[:100]}")
+                parts.append("---")
+        if parts:
+            ad_intelligence_str = "\n".join(parts)
+
     # Truncate total if needed
     if len(competitor_text) > 80000:
         competitor_text = competitor_text[:80000]
@@ -226,7 +299,9 @@ async def run_analyst(company_profile: dict, competitor_pages: list[dict]) -> di
             value_prop=value_prop,
             target_audience=target_audience,
             key_features=key_features,
-            multi_source_scraped_data=competitor_text
+            multi_source_scraped_data=competitor_text,
+            review_platform_data=review_platform_str,
+            ad_intelligence_data=ad_intelligence_str,
         ),
         generation_config=genai.GenerationConfig(
             temperature=0.3,

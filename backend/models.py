@@ -42,6 +42,9 @@ class Competitor(Base):
     plan_tasks = relationship("PlanTask", back_populates="competitor", cascade="all, delete-orphan")
     monitor_jobs = relationship("MonitorJob", back_populates="competitor", cascade="all, delete-orphan")
     change_alerts = relationship("ChangeAlert", back_populates="competitor", cascade="all, delete-orphan")
+    review_data = relationship("ReviewData", back_populates="competitor", cascade="all, delete-orphan")
+    ad_data = relationship("AdData", back_populates="competitor", cascade="all, delete-orphan")
+    community_intel = relationship("CommunityIntelData", back_populates="competitor", cascade="all, delete-orphan")
 
 
 class CrawledPage(Base):
@@ -127,3 +130,69 @@ class ChangeAlert(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     competitor = relationship("Competitor", back_populates="change_alerts")
+
+
+class ReviewData(Base):
+    """Review platform data (G2, Trustpilot) for a competitor."""
+    __tablename__ = "review_data"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    competitor_id = Column(Integer, ForeignKey("competitors.id"), nullable=False)
+    source = Column(String(50), default="")           # "g2" | "trustpilot"
+    url = Column(String(512), default="")
+    overall_rating = Column(Float, default=0.0)
+    review_count = Column(Integer, default=0)
+    rating_distribution = Column(JSON, default=dict)   # {"5": 60, "4": 15, ...}
+    likes = Column(JSON, default=list)                 # list of strings
+    dislikes = Column(JSON, default=list)              # list of strings
+    use_cases = Column(JSON, default=list)             # list of strings
+    negative_themes = Column(JSON, default=list)       # list of strings
+    reviewer_segments = Column(JSON, default=list)     # list of strings
+    recent_reviews = Column(JSON, default=list)        # list of review objects
+    scraper_status = Column(String(50), default="success")  # success | blocked | not_found | error
+    scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    competitor = relationship("Competitor", back_populates="review_data")
+
+
+class AdData(Base):
+    """Ad library data (Meta, Google) for a competitor."""
+    __tablename__ = "ad_data"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    competitor_id = Column(Integer, ForeignKey("competitors.id"), nullable=False)
+    source = Column(String(50), default="")           # "meta_ads" | "google_ads"
+    url = Column(String(512), default="")
+    total_ads_found = Column(Integer, default=0)
+    ads = Column(JSON, default=list)                  # list of ad objects
+    cta_distribution = Column(JSON, default=dict)     # {"Sign Up": 6, ...}
+    top_messaging_themes = Column(JSON, default=list)
+    top_keywords = Column(JSON, default=list)
+    headline_patterns = Column(JSON, default=list)
+    scraper_status = Column(String(50), default="success")  # success | blocked | not_found | error
+    scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    competitor = relationship("Competitor", back_populates="ad_data")
+
+
+class CommunityIntelData(Base):
+    """Community intelligence data (HackerNews, Reddit Deep) for a competitor."""
+    __tablename__ = "community_intel_data"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    competitor_id = Column(Integer, ForeignKey("competitors.id"), nullable=False)
+    source = Column(String(50), default="")            # "hackernews" | "reddit_deep"
+    total_mentions = Column(Integer, default=0)
+    sentiment_score = Column(Integer, default=50)       # 0-100, 50 = neutral
+    sentiment_breakdown = Column(JSON, default=dict)    # {positive: N, negative: N, neutral: N}
+    positive_comments = Column(JSON, default=list)      # list of {text, url, points, ...}
+    negative_comments = Column(JSON, default=list)      # list of {text, url, points, ...}
+    reviews = Column(JSON, default=list)                # reddit_deep: reviews
+    complaints = Column(JSON, default=list)             # reddit_deep: complaints
+    comparisons = Column(JSON, default=list)            # reddit_deep: comparison posts
+    switching_signals = Column(JSON, default=list)      # list of {signal, url, ...}
+    top_subreddits = Column(JSON, default=list)         # reddit_deep: [{name, mentions}]
+    scraper_status = Column(String(50), default="success")
+    scraped_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    competitor = relationship("Competitor", back_populates="community_intel")

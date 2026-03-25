@@ -8,14 +8,18 @@ import {
     Filler,
     Tooltip,
     Legend,
+    ArcElement,
+    CategoryScale,
+    LinearScale,
+    BarElement,
 } from 'chart.js';
-import { Radar } from 'react-chartjs-2';
+import { Radar, Doughnut, Bar } from 'react-chartjs-2';
 import { generateSalesSequence, sendSalesEmail } from '../utils/api';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useGoogleLogin } from '@react-oauth/google';
 
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
 
 export default function Dashboard({
     competitors,
@@ -24,9 +28,15 @@ export default function Dashboard({
     companyData,
     analysisDataMap,
     planDataMap,
+    reviewDataMap = {},
+    adDataMap = {},
+    communityIntelMap = {},
 }) {
     const analysisData = analysisDataMap[activeCompetitorId] || null;
     const planData = planDataMap[activeCompetitorId] || null;
+    const reviewData = reviewDataMap[activeCompetitorId] || [];
+    const adData = adDataMap[activeCompetitorId] || [];
+    const communityIntelData = communityIntelMap[activeCompetitorId] || [];
     const competitorId = activeCompetitorId;
 
     // Use the new JSON schema structure
@@ -432,6 +442,382 @@ export default function Dashboard({
                     })}
                 </div>
             </div>
+
+            {/* ========== VOICE OF CUSTOMER PANEL ========== */}
+            {reviewData.length > 0 && (
+                <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                    <div className="section-title">🗣️ Voice of Customer</div>
+
+                    {/* Review Source Badges */}
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', flexWrap: 'wrap' }}>
+                        {reviewData.map((r, i) => (
+                            <span key={i} style={{
+                                padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                background: r.scraper_status === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                color: r.scraper_status === 'success' ? '#10b981' : '#f59e0b',
+                                border: `1px solid ${r.scraper_status === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                            }}>
+                                {r.source === 'trustpilot' ? '⭐ Trustpilot' : r.source}: {r.scraper_status === 'success' ? `${r.overall_rating}/5 (${r.review_count} reviews)` : 'Data unavailable'}
+                            </span>
+                        ))}
+                    </div>
+
+                    <div className="grid-2" style={{ marginBottom: 'var(--space-md)' }}>
+                        {/* Review Score Bars */}
+                        <div className="glass-card">
+                            <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-md)', color: 'var(--text-primary)' }}>📊 Review Scores</h4>
+                            {reviewData.filter(r => r.scraper_status === 'success').map((r, i) => (
+                                <div key={i} style={{ marginBottom: 'var(--space-sm)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.8rem' }}>
+                                        <span>{r.source === 'trustpilot' ? 'Trustpilot' : r.source}</span>
+                                        <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{r.overall_rating}/5</span>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '6px', height: '10px', overflow: 'hidden' }}>
+                                        <div style={{
+                                            width: `${(r.overall_rating / 5) * 100}%`, height: '100%',
+                                            background: 'linear-gradient(90deg, #a855f7, #06b6d4)', borderRadius: '6px',
+                                            transition: 'width 0.8s ease',
+                                        }} />
+                                    </div>
+                                </div>
+                            ))}
+                            {reviewData.filter(r => r.scraper_status === 'blocked').map((r, i) => (
+                                <div key={`b-${i}`} style={{ padding: 'var(--space-sm)', background: 'rgba(245,158,11,0.1)', borderRadius: 'var(--radius)', marginBottom: 'var(--space-xs)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    ⚠️ {r.source === 'trustpilot' ? 'Trustpilot' : r.source} data unavailable
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Sentiment Doughnut */}
+                        {(() => {
+                            const tp = reviewData.find(r => r.source === 'trustpilot' && r.scraper_status === 'success' && r.rating_distribution);
+                            if (!tp) return <div className="glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No rating distribution available</div>;
+                            const dist = tp.rating_distribution || {};
+                            return (
+                                <div className="glass-card">
+                                    <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-sm)', color: 'var(--text-primary)' }}>🍩 Sentiment Breakdown</h4>
+                                    <div style={{ maxWidth: 200, margin: '0 auto' }}>
+                                        <Doughnut
+                                            data={{
+                                                labels: ['5★', '4★', '3★', '2★', '1★'],
+                                                datasets: [{
+                                                    data: [dist['5'] || 0, dist['4'] || 0, dist['3'] || 0, dist['2'] || 0, dist['1'] || 0],
+                                                    backgroundColor: ['#10b981', '#34d399', '#f59e0b', '#ef4444', '#991b1b'],
+                                                    borderWidth: 0,
+                                                }],
+                                            }}
+                                            options={{ responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#8b8b9e', font: { size: 11 } } } } }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+
+                    <div className="grid-2" style={{ marginBottom: 'var(--space-md)' }}>
+                        {/* What Customers Love */}
+                        <div className="glass-card">
+                            <h4 style={{ color: '#10b981', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>✅ What Customers Love</h4>
+                            {reviewData.flatMap(r => r.likes || []).slice(0, 5).map((like, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: 'var(--space-xs)', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
+                                    <span style={{ color: '#10b981', flexShrink: 0 }}>✅</span>
+                                    <span>{like}</span>
+                                </div>
+                            ))}
+                            {reviewData.flatMap(r => r.likes || []).length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No data available</p>}
+                        </div>
+
+                        {/* What Customers Hate */}
+                        <div className="glass-card">
+                            <h4 style={{ color: '#f59e0b', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>⚠️ Objection Opportunities</h4>
+                            {reviewData.flatMap(r => [...(r.dislikes || []), ...(r.negative_themes || [])]).slice(0, 5).map((dislike, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: 'var(--space-xs)', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
+                                    <span style={{ color: '#f59e0b', flexShrink: 0 }}>⚠️</span>
+                                    <span>{dislike}</span>
+                                </div>
+                            ))}
+                            {reviewData.flatMap(r => [...(r.dislikes || []), ...(r.negative_themes || [])]).length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No data available</p>}
+                        </div>
+                    </div>
+
+                    {/* Reviewer Segments */}
+                    {reviewData.flatMap(r => r.reviewer_segments || []).length > 0 && (
+                        <div style={{ marginTop: 'var(--space-sm)' }}>
+                            <h4 style={{ fontSize: '0.85rem', marginBottom: 'var(--space-sm)', color: 'var(--text-primary)' }}>👥 Who Uses Them</h4>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {[...new Set(reviewData.flatMap(r => r.reviewer_segments || []))].slice(0, 12).map((seg, i) => (
+                                    <span key={i} style={{
+                                        padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem',
+                                        background: ['rgba(168,85,247,0.15)', 'rgba(6,182,212,0.15)', 'rgba(16,185,129,0.15)', 'rgba(245,158,11,0.15)'][i % 4],
+                                        color: ['#a855f7', '#06b6d4', '#10b981', '#f59e0b'][i % 4],
+                                        border: `1px solid ${['rgba(168,85,247,0.3)', 'rgba(6,182,212,0.3)', 'rgba(16,185,129,0.3)', 'rgba(245,158,11,0.3)'][i % 4]}`,
+                                    }}>{seg}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ========== AD INTELLIGENCE PANEL ========== */}
+            {adData.length > 0 && (
+                <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                    <div className="section-title">📢 Ad Intelligence</div>
+
+                    {/* Source Badges */}
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', flexWrap: 'wrap' }}>
+                        {adData.map((a, i) => (
+                            <span key={i} style={{
+                                padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                background: a.scraper_status === 'success' ? 'rgba(168,85,247,0.15)' : 'rgba(245,158,11,0.15)',
+                                color: a.scraper_status === 'success' ? '#a855f7' : '#f59e0b',
+                                border: `1px solid ${a.scraper_status === 'success' ? 'rgba(168,85,247,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                            }}>
+                                {a.source === 'meta_ads' ? '📘 Meta Ads' : '🔍 Google Ads'}: {a.scraper_status === 'success' ? `${a.total_ads_found} active` : 'Unavailable'}
+                            </span>
+                        ))}
+                    </div>
+
+                    {adData.some(a => a.scraper_status === 'success') ? (
+                        <>
+                            {/* Active Ads Counter */}
+                            <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
+                                <div style={{
+                                    fontSize: '3rem', fontWeight: 900, color: '#a855f7',
+                                    textShadow: '0 0 30px rgba(168,85,247,0.5)',
+                                }}>
+                                    {adData.reduce((sum, a) => sum + (a.scraper_status === 'success' ? (a.total_ads_found || 0) : 0), 0)}
+                                </div>
+                                <div className="label">Active Ads Across Platforms</div>
+                            </div>
+
+                            <div className="grid-2" style={{ marginBottom: 'var(--space-md)' }}>
+                                {/* CTA Distribution */}
+                                {(() => {
+                                    const allCtas = {};
+                                    adData.forEach(a => {
+                                        if (a.cta_distribution) {
+                                            Object.entries(a.cta_distribution).forEach(([k, v]) => {
+                                                allCtas[k] = (allCtas[k] || 0) + v;
+                                            });
+                                        }
+                                    });
+                                    const ctaLabels = Object.keys(allCtas);
+                                    const ctaValues = Object.values(allCtas);
+                                    if (ctaLabels.length === 0) return null;
+                                    return (
+                                        <div className="glass-card">
+                                            <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>🎯 CTA Distribution</h4>
+                                            <Bar
+                                                data={{
+                                                    labels: ctaLabels,
+                                                    datasets: [{
+                                                        data: ctaValues,
+                                                        backgroundColor: 'rgba(168, 85, 247, 0.6)',
+                                                        borderColor: '#a855f7',
+                                                        borderWidth: 1,
+                                                        borderRadius: 4,
+                                                    }],
+                                                }}
+                                                options={{
+                                                    indexAxis: 'y', responsive: true,
+                                                    plugins: { legend: { display: false } },
+                                                    scales: {
+                                                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b8b9e' } },
+                                                        y: { grid: { display: false }, ticks: { color: '#8b8b9e', font: { size: 11 } } },
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Messaging Themes */}
+                                <div className="glass-card">
+                                    <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>💡 Messaging Angles</h4>
+                                    {[...new Set(adData.flatMap(a => a.top_messaging_themes || []))].slice(0, 5).map((theme, i) => (
+                                        <div key={i} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '8px 12px', marginBottom: 'var(--space-xs)',
+                                            background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)',
+                                            border: '1px solid rgba(255,255,255,0.05)',
+                                        }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{theme}</span>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(`Use "${theme}" as your messaging angle for ${companyData?.name || 'your product'}`)}
+                                                style={{ background: 'none', border: '1px solid rgba(168,85,247,0.3)', color: '#a855f7', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', cursor: 'pointer' }}
+                                            >📋 Steal</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Ad Examples Carousel */}
+                            {(() => {
+                                const allAds = adData.flatMap(a => (a.ads || []).map(ad => ({ ...ad, platform: a.source })));
+                                if (allAds.length === 0) return null;
+                                return (
+                                    <div style={{ marginTop: 'var(--space-md)' }}>
+                                        <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-sm)', color: 'var(--text-primary)' }}>📺 Ad Examples</h4>
+                                        <div style={{ display: 'flex', gap: 'var(--space-sm)', overflowX: 'auto', paddingBottom: 'var(--space-sm)' }}>
+                                            {allAds.slice(0, 8).map((ad, i) => (
+                                                <div key={i} style={{
+                                                    minWidth: '260px', maxWidth: '280px', padding: 'var(--space-md)',
+                                                    background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-md)',
+                                                    border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0,
+                                                }}>
+                                                    <div style={{ display: 'flex', gap: '6px', marginBottom: 'var(--space-xs)' }}>
+                                                        <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: ad.platform === 'meta_ads' ? 'rgba(59,89,152,0.2)' : 'rgba(66,133,244,0.2)', color: ad.platform === 'meta_ads' ? '#8b9dc3' : '#7baaf7' }}>
+                                                            {ad.platform === 'meta_ads' ? 'Meta' : 'Google'}
+                                                        </span>
+                                                        {ad.cta && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(168,85,247,0.2)', color: '#a855f7' }}>{ad.cta}</span>}
+                                                        {ad.format && ad.format !== 'unknown' && <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(6,182,212,0.2)', color: '#06b6d4' }}>{ad.format}</span>}
+                                                    </div>
+                                                    {ad.headline && <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>{ad.headline}</div>}
+                                                    {(ad.body || ad.description) && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{(ad.body || ad.description).substring(0, 120)}{(ad.body || ad.description).length > 120 ? '...' : ''}</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </>
+                    ) : (
+                        /* Fallback for blocked ad data */
+                        <div style={{ padding: 'var(--space-md)', background: 'rgba(245,158,11,0.08)', borderRadius: 'var(--radius)', border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-sm)' }}>
+                                Ad data requires manual check. Visit the ad libraries directly:
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'center' }}>
+                                {adData.filter(a => a.source === 'meta_ads').map((a, i) => (
+                                    <a key={`m-${i}`} href={a.url || 'https://www.facebook.com/ads/library/'} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>📘 Meta Ad Library ↗</a>
+                                ))}
+                                {adData.filter(a => a.source === 'google_ads').map((a, i) => (
+                                    <a key={`g-${i}`} href={a.url || 'https://adstransparency.google.com'} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>🔍 Google Ads Transparency ↗</a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ========== COMMUNITY INTELLIGENCE PANEL ========== */}
+            {communityIntelData.length > 0 && (
+                <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                    <div className="section-title">🌐 Community Intelligence</div>
+
+                    {/* Source Badges */}
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', flexWrap: 'wrap' }}>
+                        {communityIntelData.map((c, i) => (
+                            <span key={i} style={{
+                                padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600,
+                                background: c.scraper_status === 'success' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                                color: c.scraper_status === 'success' ? '#ef4444' : '#f59e0b',
+                                border: `1px solid ${c.scraper_status === 'success' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                            }}>
+                                {c.source === 'hackernews' ? '🔥 HackerNews' : '🔍 Reddit Deep'}: {c.scraper_status === 'success' ? `${c.total_mentions} mentions` : 'Unavailable'}
+                            </span>
+                        ))}
+                    </div>
+
+                    {communityIntelData.some(c => c.scraper_status === 'success') ? (
+                        <>
+                            <div className="grid-2" style={{ marginBottom: 'var(--space-md)' }}>
+                                {/* Overall Sentiment Score */}
+                                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                    <h4 style={{ fontSize: '0.9rem', marginBottom: 'var(--space-md)', color: 'var(--text-primary)' }}>❤️ Average Community Sentiment</h4>
+                                    <div style={{
+                                        position: 'relative', width: 140, height: 140,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        borderRadius: '50%', background: 'conic-gradient(#ef4444 0%, #3b82f6 100%)',
+                                    }}>
+                                        <div style={{
+                                            position: 'absolute', inset: 8, background: 'var(--bg-glass)',
+                                            borderRadius: '50%', display: 'flex', flexDirection: 'column',
+                                            alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                                {Math.round(communityIntelData.reduce((sum, c) => sum + (c.sentiment_score || 0), 0) / communityIntelData.length)}
+                                            </span>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>out of 100</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Switching Signals (High Value) */}
+                                <div className="glass-card">
+                                    <h4 style={{ color: '#ec4899', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>🔄 Switching Signals</h4>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 'var(--space-sm)' }}>
+                                        Users actively discussing migrating away from this competitor.
+                                    </p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                                        {communityIntelData.flatMap(c => c.switching_signals || []).slice(0, 10).map((sig, i) => (
+                                            <a key={i} href={sig.url} target="_blank" rel="noopener noreferrer" style={{
+                                                fontSize: '0.8rem', color: 'var(--text-secondary)', textDecoration: 'none',
+                                                background: 'rgba(236,72,153,0.08)', padding: '8px', borderRadius: '4px',
+                                                borderLeft: '2px solid #ec4899', display: 'block', lineHeight: 1.4
+                                            }}>
+                                                "{sig.signal || sig.text || sig.body}" - <span style={{ color: '#ec4899' }}>{sig.author || sig.subreddit || 'user'}</span>
+                                            </a>
+                                        ))}
+                                        {communityIntelData.flatMap(c => c.switching_signals || []).length === 0 && (
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No strong switching signals detected yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid-2">
+                                {/* Reddit Complaints & Gripes */}
+                                {(() => {
+                                    const reddit = communityIntelData.find(c => c.source === 'reddit_deep' && c.scraper_status === 'success');
+                                    if (!reddit?.complaints?.length) return null;
+                                    return (
+                                        <div className="glass-card">
+                                            <h4 style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>😡 Top Reddit Complaints</h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                {reddit.complaints.slice(0, 5).map((comp, i) => (
+                                                    <a key={i} href={comp.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{comp.title}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>r/{comp.subreddit} • Score: {comp.score}</div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* HackerNews Top Mentions */}
+                                {(() => {
+                                    const hn = communityIntelData.find(c => c.source === 'hackernews' && c.scraper_status === 'success');
+                                    if (!hn) return null;
+                                    const allHn = [...(hn.positive_comments || []), ...(hn.negative_comments || [])].sort((a,b) => (b.points||0) - (a.points||0)).slice(0,5);
+                                    if (!allHn.length) return null;
+                                    return (
+                                        <div className="glass-card">
+                                            <h4 style={{ color: '#f97316', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>🔥 Top HN Discussions</h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                {allHn.map((post, i) => (
+                                                    <a key={i} href={post.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 2 }}>"{post.text.substring(0, 100)}..."</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#f97316' }}>{post.author} • {post.points} points</div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ padding: 'var(--space-md)', background: 'rgba(245,158,11,0.08)', borderRadius: 'var(--radius)', border: '1px solid rgba(245,158,11,0.2)', textAlign: 'center' }}>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                Community data currently unavailable. The system will retry on the next crawl.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Roadmap Timeline */}
             {roadmap.length > 0 && (

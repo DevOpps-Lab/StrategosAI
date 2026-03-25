@@ -1,14 +1,79 @@
 import { useState, useRef, useEffect } from 'react';
 import { sendChatMessage } from '../utils/api';
 
-const SUGGESTED_QUESTIONS = [
+const BASE_QUESTIONS = [
     "Write and send a cold email to test@example.com",
     "Why are customers leaving this competitor?",
     "What's their biggest pricing weakness?",
     "Who should we target first?",
 ];
 
-export default function ChatBot({ competitorId, competitorName, analysisData }) {
+const REVIEW_QUESTIONS = [
+    "What objections should I address in sales calls?",
+    "What do their customers love most?",
+];
+
+const AD_QUESTIONS = [
+    "What ad angles are they using?",
+    "How can I counter their messaging?",
+];
+
+const COMMUNITY_QUESTIONS = [
+    "Are users complaining on Reddit?",
+    "Show me HackerNews sentiment.",
+    "Any switching signals from the community?",
+];
+
+function buildReviewSummary(reviewData) {
+    if (!reviewData || reviewData.length === 0) return 'No review data available';
+    const parts = [];
+    for (const r of reviewData) {
+        if (r.scraper_status !== 'success') continue;
+        const src = 'Trustpilot';
+        parts.push(`${src}: ${r.overall_rating}/5 (${r.review_count} reviews)`);
+        if (r.likes?.length) parts.push(`  Likes: ${r.likes.slice(0, 3).join('; ')}`);
+        if (r.dislikes?.length) parts.push(`  Dislikes: ${r.dislikes.slice(0, 3).join('; ')}`);
+        if (r.negative_themes?.length) parts.push(`  Complaints: ${r.negative_themes.join(', ')}`);
+    }
+    return parts.length ? parts.join('\n') : 'No review data available';
+}
+
+function buildAdSummary(adData) {
+    if (!adData || adData.length === 0) return 'No ad data available';
+    const parts = [];
+    for (const a of adData) {
+        if (a.scraper_status !== 'success') continue;
+        const src = a.source === 'meta_ads' ? 'Meta Ads' : 'Google Ads';
+        parts.push(`${src}: ${a.total_ads_found} active ads`);
+        if (a.top_messaging_themes?.length) parts.push(`  Themes: ${a.top_messaging_themes.join(', ')}`);
+        if (a.top_keywords?.length) parts.push(`  Keywords: ${a.top_keywords.slice(0, 5).join(', ')}`);
+        if (a.cta_distribution && Object.keys(a.cta_distribution).length) parts.push(`  CTAs: ${Object.entries(a.cta_distribution).map(([k,v]) => `${k} (${v})`).join(', ')}`);
+    }
+    return parts.length ? parts.join('\n') : 'No ad data available';
+}
+
+function buildCommunityIntelSummary(communityIntelData) {
+    if (!communityIntelData || communityIntelData.length === 0) return 'No community intelligence available';
+    const parts = [];
+    for (const c of communityIntelData) {
+        if (c.scraper_status !== 'success') continue;
+        const src = c.source === 'hackernews' ? 'Hacker News' : 'Reddit Deep';
+        parts.push(`=== ${src} (${c.total_mentions} mentions) ===`);
+        parts.push(`Sentiment Score: ${c.sentiment_score}/100`);
+        if (c.switching_signals?.length) {
+            parts.push(`Switching Signals: ${c.switching_signals.slice(0, 3).map(s => `"${s.signal || s.text || s.body}"`).join(' | ')}`);
+        }
+        if (c.source === 'reddit_deep' && c.complaints?.length) {
+            parts.push(`Top Reddit Complaints: ${c.complaints.slice(0, 3).map(cmp => `"${cmp.title}"`).join(' | ')}`);
+        }
+        if (c.source === 'hackernews' && c.positive_comments?.length) {
+            parts.push(`Top HN Praise: ${c.positive_comments.slice(0, 2).map(p => `"${p.text.substring(0, 80)}..."`).join(' | ')}`);
+        }
+    }
+    return parts.length ? parts.join('\n') : 'No community intelligence available';
+}
+
+export default function ChatBot({ competitorId, competitorName, analysisData, reviewData = [], adData = [], communityIntelData = [] }) {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         {
@@ -52,7 +117,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData }) 
             content: m.content
         }));
 
-        // Build context object
+        // Build context object with review/ad summaries
         const context = {
             competitor_name: analysisData?.competitor_name || competitorName || "Unknown",
             competitor_url: "",
@@ -66,6 +131,9 @@ export default function ChatBot({ competitorId, competitorName, analysisData }) 
             top_praise: (analysisData?.community_sentiment?.top_praise || []).map(p => p.point || String(p)),
             top_complaints: (analysisData?.community_sentiment?.top_complaints || []).map(c => c.point || String(c)),
             positioning: typeof analysisData?.positioning === 'string' ? analysisData.positioning : JSON.stringify(analysisData?.positioning || {}),
+            review_summary: buildReviewSummary(reviewData),
+            ad_summary: buildAdSummary(adData),
+            community_intel_summary: buildCommunityIntelSummary(communityIntelData),
         };
 
         try {
@@ -210,7 +278,12 @@ export default function ChatBot({ competitorId, competitorName, analysisData }) 
                     {/* Suggested Questions (only for first message) */}
                     {messages.length === 1 && (
                         <div style={{ padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {SUGGESTED_QUESTIONS.map((q, i) => (
+                            {[
+                                ...BASE_QUESTIONS,
+                                ...(reviewData.some(r => r.scraper_status === 'success') ? REVIEW_QUESTIONS : []),
+                                ...(adData.some(a => a.scraper_status === 'success') ? AD_QUESTIONS : []),
+                                ...(communityIntelData.some(c => c.scraper_status === 'success') ? COMMUNITY_QUESTIONS : []),
+                            ].map((q, i) => (
                                 <button
                                     key={i}
                                     onClick={() => sendMessage(q)}

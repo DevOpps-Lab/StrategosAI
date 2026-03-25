@@ -88,6 +88,16 @@ export const triggerVoiceCall = (competitorId) =>
 // --- Chat ---
 export const sendChatMessage = (competitorId, context, history, message) =>
     request('/chat', { method: 'POST', body: { competitor_id: competitorId, context, history, message } });
+
+// --- Reviews & Ads ---
+export const getReviews = (competitorId) =>
+    request(`/competitor/${competitorId}/reviews`);
+
+export const getAds = (competitorId) =>
+    request(`/competitor/${competitorId}/ads`);
+
+export const getCommunityIntel = (competitorId) =>
+    request(`/competitor/${competitorId}/community-intel`);
 // --- SSE Helper with job_id ---
 export function subscribeToStream(competitorId, onEvent, jobId = null) {
     // Use job_id endpoint if available (more reliable), otherwise fall back to competitor_id

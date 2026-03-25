@@ -7,11 +7,14 @@ import {
     Filler,
     Tooltip,
     Legend,
+    CategoryScale,
+    LinearScale,
+    BarElement,
 } from 'chart.js';
-import { Radar } from 'react-chartjs-2';
+import { Radar, Bar } from 'react-chartjs-2';
 import { listCompetitors, compareCompetitors } from '../utils/api';
 
-ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 const RADAR_COLORS = [
     { border: 'rgba(108, 92, 231, 1)', bg: 'rgba(108, 92, 231, 0.15)' },
@@ -22,7 +25,7 @@ const RADAR_COLORS = [
     { border: 'rgba(162, 155, 254, 1)', bg: 'rgba(162, 155, 254, 0.15)' },
 ];
 
-const RADAR_LABELS = ['Features', 'Pricing', 'Market Position', 'Growth Signals', 'Enterprise', 'Community'];
+const RADAR_LABELS = ['Features', 'Pricing', 'Market Position', 'Growth Signals', 'Enterprise', 'Community', 'Trustpilot'];
 
 export default function CompareView({ companyId, companyData }) {
     const [competitors, setCompetitors] = useState([]);
@@ -69,7 +72,7 @@ export default function CompareView({ companyId, companyData }) {
         }
     };
 
-    // Build radar chart data
+    // Build radar chart data — includes Trustpilot as extra axis (normalized to 0–10)
     const radarData = compareData ? {
         labels: RADAR_LABELS,
         datasets: compareData.competitors.map((comp, i) => ({
@@ -81,6 +84,7 @@ export default function CompareView({ companyId, companyData }) {
                 comp.radar.growth_signals,
                 comp.radar.enterprise_readiness,
                 comp.radar.community,
+                (comp.review_scores?.trustpilot_score || 0) * 2,    // 0-5 → 0-10
             ],
             borderColor: RADAR_COLORS[i % RADAR_COLORS.length].border,
             backgroundColor: RADAR_COLORS[i % RADAR_COLORS.length].bg,
@@ -196,12 +200,88 @@ export default function CompareView({ companyId, companyData }) {
                     <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
                         <div className="section-title">📊 Strategic Radar</div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-md)' }}>
-                            AI-scored comparison across 6 strategic dimensions (0-10)
+                            AI-scored comparison across 7 dimensions including Trustpilot review score (0-10)
                         </p>
                         <div style={{ maxWidth: 550, margin: '0 auto' }}>
                             <Radar data={radarData} options={radarOptions} />
                         </div>
                     </div>
+
+                    {/* Ad Aggressiveness Score */}
+                    {compareData.competitors.some(c => (c.ad_aggressiveness || 0) > 0) && (
+                        <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                            <div className="section-title">📢 Ad Aggressiveness</div>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-md)' }}>
+                                Total active ads found across Meta & Google ad libraries
+                            </p>
+                            <div style={{ maxWidth: 600, margin: '0 auto' }}>
+                                <Bar
+                                    data={{
+                                        labels: compareData.competitors.map(c => c.name),
+                                        datasets: [{
+                                            label: 'Active Ads',
+                                            data: compareData.competitors.map(c => c.ad_aggressiveness || 0),
+                                            backgroundColor: compareData.competitors.map((_, i) =>
+                                                RADAR_COLORS[i % RADAR_COLORS.length].bg.replace('0.15', '0.6')
+                                            ),
+                                            borderColor: compareData.competitors.map((_, i) =>
+                                                RADAR_COLORS[i % RADAR_COLORS.length].border
+                                            ),
+                                            borderWidth: 1,
+                                            borderRadius: 6,
+                                        }],
+                                    }}
+                                    options={{
+                                        indexAxis: 'y',
+                                        responsive: true,
+                                        plugins: { legend: { display: false } },
+                                        scales: {
+                                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b8b9e' } },
+                                            y: { grid: { display: false }, ticks: { color: '#8b8b9e', font: { size: 12, family: 'Inter' } } },
+                                        },
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Objections Overlap Table */}
+                    {(compareData.objections_overlap || []).length > 0 && (
+                        <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
+                            <div className="section-title">⚠️ Objections Overlap</div>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 'var(--space-md)' }}>
+                                Common customer objections across competitors — shared pain points are your strongest sales ammunition
+                            </p>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className="feature-matrix">
+                                    <thead>
+                                        <tr>
+                                            <th>Objection</th>
+                                            {compareData.competitors.map((comp) => (
+                                                <th key={comp.id}>{comp.name}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {compareData.objections_overlap.map((row, i) => (
+                                            <tr key={i}>
+                                                <td className="feature-matrix-label" style={{ fontSize: '0.8rem', maxWidth: '250px' }}>{row.objection}</td>
+                                                {compareData.competitors.map((comp) => (
+                                                    <td
+                                                        key={comp.id}
+                                                        className={`feature-matrix-cell ${row[comp.name] ? 'has' : 'missing'}`}
+                                                        style={{ textAlign: 'center' }}
+                                                    >
+                                                        {row[comp.name] ? '✅' : '❌'}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Feature Gap Matrix */}
                     {allFeatures.length > 0 && (

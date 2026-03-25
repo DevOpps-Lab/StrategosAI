@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models import Competitor, Signal, CrawledPage
+from models import Competitor, Signal, CrawledPage, ReviewData, AdData
 from agents.analyst import score_competitor_dimensions
 
 router = APIRouter(prefix="/api/compare", tags=["compare"])
@@ -107,6 +107,26 @@ async def compare_competitors(
             )
             feature_gaps[feature] = has_it
 
+        # Fetch review data for review scores
+        review_result = await db.execute(
+            select(ReviewData).where(ReviewData.competitor_id == comp_id)
+        )
+        review_records = review_result.scalars().all()
+        trustpilot_score = 0.0
+        top_objections = []
+        top_strengths = []
+        for rv in review_records:
+            if rv.source == "trustpilot" and rv.scraper_status == "success":
+                trustpilot_score = rv.overall_rating or 0.0
+                top_objections.extend(rv.negative_themes or [])
+
+        # Fetch ad data
+        ad_result = await db.execute(
+            select(AdData).where(AdData.competitor_id == comp_id)
+        )
+        ad_records = ad_result.scalars().all()
+        total_active_ads = sum(a.total_ads_found or 0 for a in ad_records if a.scraper_status == "success")
+
         competitors_data.append({
             "id": competitor.id,
             "name": competitor.name or competitor.url,
@@ -117,9 +137,24 @@ async def compare_competitors(
             "signal_count": len(signals_list),
             "threats": len([s for s in signals_list if s["signal_type"] == "threat"]),
             "opportunities": len([s for s in signals_list if s["signal_type"] == "opportunity"]),
+            "review_scores": {
+                "trustpilot_score": trustpilot_score,
+            },
+            "ad_aggressiveness": total_active_ads,
+            "top_objections": top_objections[:5],
+            "top_strengths": top_strengths[:5],
         })
 
     if not competitors_data:
         raise HTTPException(status_code=404, detail="No valid competitors found for the given IDs")
 
-    return {"competitors": competitors_data}
+    # Build objections overlap matrix
+    all_objections = list(set(obj for c in competitors_data for obj in c.get("top_objections", [])))
+    objections_overlap = []
+    for obj in all_objections[:10]:
+        row = {"objection": obj}
+        for c in competitors_data:
+            row[c["name"]] = obj in c.get("top_objections", [])
+        objections_overlap.append(row)
+
+    return {"competitors": competitors_data, "objections_overlap": objections_overlap}

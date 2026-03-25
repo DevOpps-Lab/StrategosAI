@@ -27,6 +27,8 @@ class ChatContext(BaseModel):
     top_praise: List[str] = []
     top_complaints: List[str] = []
     positioning: str = "Unknown"
+    review_summary: str = "No review data available"
+    ad_summary: str = "No ad data available"
 
 class ChatRequest(BaseModel):
     competitor_id: int

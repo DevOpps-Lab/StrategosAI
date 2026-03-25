@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models import Competitor, CrawledPage, Signal, Company
+from models import Competitor, CrawledPage, Signal, Company, ReviewData, AdData
 from agents.analyst import run_analyst
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
@@ -63,6 +63,39 @@ async def run_analysis(competitor_id: int, db: AsyncSession = Depends(get_db)):
     if not pages:
         raise HTTPException(status_code=400, detail="No crawled pages found")
 
+    # Get review data
+    review_result = await db.execute(
+        select(ReviewData).where(ReviewData.competitor_id == competitor_id)
+    )
+    review_records = review_result.scalars().all()
+    review_dicts = [
+        {
+            "source": r.source, "scraper_status": r.scraper_status,
+            "overall_rating": r.overall_rating, "review_count": r.review_count,
+            "rating_distribution": r.rating_distribution, "likes": r.likes,
+            "dislikes": r.dislikes, "use_cases": r.use_cases,
+            "negative_themes": r.negative_themes, "reviewer_segments": r.reviewer_segments,
+            "recent_reviews": r.recent_reviews,
+        }
+        for r in review_records
+    ]
+
+    # Get ad data
+    ad_result = await db.execute(
+        select(AdData).where(AdData.competitor_id == competitor_id)
+    )
+    ad_records = ad_result.scalars().all()
+    ad_dicts = [
+        {
+            "source": a.source, "scraper_status": a.scraper_status,
+            "total_ads_found": a.total_ads_found, "ads": a.ads,
+            "cta_distribution": a.cta_distribution,
+            "top_messaging_themes": a.top_messaging_themes,
+            "top_keywords": a.top_keywords, "headline_patterns": a.headline_patterns,
+        }
+        for a in ad_records
+    ]
+
     # Build inputs
     company_profile = {
         "name": company.name,
@@ -86,7 +119,7 @@ async def run_analysis(competitor_id: int, db: AsyncSession = Depends(get_db)):
 
     # Run analysis
     try:
-        analysis = await run_analyst(company_profile, page_dicts)
+        analysis = await run_analyst(company_profile, page_dicts, review_data=review_dicts, ad_data=ad_dicts)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 

@@ -33,6 +33,12 @@ Top Complaints: {top_complaints}
 ### Competitor's Strategic Positioning
 {positioning}
 
+### Review Platform Intelligence
+{review_summary}
+
+### Ad Library Intelligence
+{ad_summary}
+
 ## IMPORTANT GUIDELINES
 - Answer questions only based on the intelligence dossier above.
 - If asked to write an email or sales script, do so. Keep it short and punchy.
@@ -55,6 +61,8 @@ async def chat_with_analyst(competitor_id: int, context: dict, history: list, us
         top_praise=", ".join(context.get("top_praise", [])),
         top_complaints=", ".join(context.get("top_complaints", [])),
         positioning=context.get("positioning", "Unknown"),
+        review_summary=context.get("review_summary", "No review data available"),
+        ad_summary=context.get("ad_summary", "No ad data available"),
     )
 
     # Define the Email Sending Tool
