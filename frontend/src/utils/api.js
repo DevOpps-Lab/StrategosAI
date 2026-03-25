@@ -92,6 +92,77 @@ export const triggerVoiceCall = (competitorId) =>
 export const sendChatMessage = (competitorId, context, history, message) =>
     request('/chat', { method: 'POST', body: { competitor_id: competitorId, context, history, message } });
 
+/**
+ * Stream chat response via SSE from /api/chat/stream.
+ * @param {number} competitorId
+ * @param {object} context
+ * @param {Array} history
+ * @param {string} message
+ * @param {function} onToken  — called with each text chunk
+ * @param {function} onDone   — called when streaming completes
+ * @param {function} onError  — called on error
+ * @returns {function} abort — call to cancel the request
+ */
+export function streamChatMessage(competitorId, context, history, message, onToken, onDone, onError) {
+    const controller = new AbortController();
+
+    (async () => {
+        try {
+            const res = await fetch(`${API_BASE}/chat/stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ competitor_id: competitorId, context, history, message }),
+                signal: controller.signal,
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || `API error: ${res.status}`);
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // keep incomplete line in buffer
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith('data: ')) continue;
+                    const jsonStr = trimmed.slice(6);
+                    try {
+                        const payload = JSON.parse(jsonStr);
+                        if (payload.error) {
+                            onError(new Error(payload.error));
+                            return;
+                        }
+                        if (payload.done) {
+                            onDone();
+                            return;
+                        }
+                        if (payload.token) {
+                            onToken(payload.token);
+                        }
+                    } catch { /* skip unparseable lines */ }
+                }
+            }
+            onDone();
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                onError(err);
+            }
+        }
+    })();
+
+    return () => controller.abort();
+}
+
 // --- Reviews & Ads ---
 export const getReviews = (competitorId) =>
     request(`/competitor/${competitorId}/reviews`);

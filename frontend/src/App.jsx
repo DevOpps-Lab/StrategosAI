@@ -96,12 +96,8 @@ function App() {
                                             Dashboard
                                         </NavLink>
                                     </li>
-                                    <li>
-                                        <NavLink to="/compare" className={!companyId ? 'disabled' : ''}>
-                                            Compare
-                                        </NavLink>
-                                    </li>
                                 </ul>
+
                             </nav>
 
                             <div className="page-container">

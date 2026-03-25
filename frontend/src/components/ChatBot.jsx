@@ -1,16 +1,21 @@
-import { useState, useRef, useEffect } from 'react';
-import { sendChatMessage } from '../utils/api';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { streamChatMessage, sendChatMessage } from '../utils/api';
 
+/* ──────────────────────────────────────────────────────────
+   Suggested Questions — dynamically picked from available data
+   ────────────────────────────────────────────────────────── */
 const BASE_QUESTIONS = [
+    "What's their biggest weakness I can exploit?",
     "Write and send a cold email to test@example.com",
-    "Why are customers leaving this competitor?",
-    "What's their biggest pricing weakness?",
-    "Who should we target first?",
+    "How should I position against them in a sales call?",
+    "Who should we target first and why?",
 ];
 
 const REVIEW_QUESTIONS = [
     "What objections should I address in sales calls?",
-    "What do their customers love most?",
+    "What do their customers complain about the most?",
 ];
 
 const AD_QUESTIONS = [
@@ -19,18 +24,20 @@ const AD_QUESTIONS = [
 ];
 
 const COMMUNITY_QUESTIONS = [
-    "Are users complaining on Reddit?",
-    "Show me HackerNews sentiment.",
+    "Are users complaining about them on Reddit?",
     "Any switching signals from the community?",
+    "Show me the HackerNews sentiment breakdown.",
 ];
 
+/* ──────────────────────────────────────────────────────────
+   Context builders — create text summaries from raw data
+   ────────────────────────────────────────────────────────── */
 function buildReviewSummary(reviewData) {
     if (!reviewData || reviewData.length === 0) return 'No review data available';
     const parts = [];
     for (const r of reviewData) {
         if (r.scraper_status !== 'success') continue;
-        const src = 'Trustpilot';
-        parts.push(`${src}: ${r.overall_rating}/5 (${r.review_count} reviews)`);
+        parts.push(`Trustpilot: ${r.overall_rating}/5 (${r.review_count} reviews)`);
         if (r.likes?.length) parts.push(`  Likes: ${r.likes.slice(0, 3).join('; ')}`);
         if (r.dislikes?.length) parts.push(`  Dislikes: ${r.dislikes.slice(0, 3).join('; ')}`);
         if (r.negative_themes?.length) parts.push(`  Complaints: ${r.negative_themes.join(', ')}`);
@@ -73,19 +80,189 @@ function buildCommunityIntelSummary(communityIntelData) {
     return parts.length ? parts.join('\n') : 'No community intelligence available';
 }
 
+/* ──────────────────────────────────────────────────────────
+   Helpers
+   ────────────────────────────────────────────────────────── */
+const LS_KEY = (id) => `strategosai_chat_${id}`;
+
+/** Parse follow_ups JSON from end of AI response text */
+function parseFollowUps(text) {
+    if (!text) return { cleanText: text || '', followUps: [] };
+    // Look for ```json\n{"follow_ups": [...]}``` at the end
+    const regex = /```json\s*\n?\s*\{[\s\S]*?"follow_ups"\s*:\s*\[[\s\S]*?\]\s*\}\s*\n?\s*```\s*$/;
+    const match = text.match(regex);
+    if (!match) return { cleanText: text, followUps: [] };
+    const cleanText = text.slice(0, match.index).trimEnd();
+    try {
+        const parsed = JSON.parse(match[0].replace(/```json\s*\n?/, '').replace(/\n?\s*```/, ''));
+        return { cleanText, followUps: parsed.follow_ups || [] };
+    } catch {
+        return { cleanText: text, followUps: [] };
+    }
+}
+
+function getSmartQuestions(analysisData, reviewData, adData, communityIntelData) {
+    const questions = [...BASE_QUESTIONS];
+    if (reviewData?.some(r => r.scraper_status === 'success')) questions.push(...REVIEW_QUESTIONS);
+    if (adData?.some(a => a.scraper_status === 'success')) questions.push(...AD_QUESTIONS);
+    if (communityIntelData?.some(c => c.scraper_status === 'success')) questions.push(...COMMUNITY_QUESTIONS);
+    return questions;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Styles
+   ────────────────────────────────────────────────────────── */
+const styles = {
+    bubble: {
+        position: 'fixed', bottom: '24px', right: '24px',
+        width: '60px', height: '60px', borderRadius: '50%',
+        background: 'linear-gradient(135deg, #6c5ce7, #a855f7)',
+        border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '1.6rem', zIndex: 1000,
+        boxShadow: '0 4px 24px rgba(108, 92, 231, 0.5)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    },
+    panel: {
+        position: 'fixed', bottom: '96px', right: '24px',
+        width: '400px', maxHeight: '600px', borderRadius: '16px',
+        background: 'var(--bg-card, #1a1a2e)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid var(--border-color, #2a2a4a)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        display: 'flex', flexDirection: 'column',
+        zIndex: 999, overflow: 'hidden',
+    },
+    header: {
+        padding: '16px 20px',
+        borderBottom: '1px solid var(--border-color, #2a2a4a)',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        background: 'var(--bg-secondary, #16162a)',
+    },
+    messagesArea: {
+        flex: 1, overflowY: 'auto', padding: '16px',
+        display: 'flex', flexDirection: 'column', gap: '12px',
+        maxHeight: '360px',
+    },
+    userBubble: {
+        maxWidth: '85%', padding: '10px 14px',
+        borderRadius: '16px 16px 4px 16px',
+        background: 'linear-gradient(135deg, #6c5ce7, #a855f7)',
+        color: '#fff', fontSize: '0.875rem', lineHeight: '1.5',
+    },
+    aiBubble: {
+        maxWidth: '90%', padding: '12px 16px',
+        borderRadius: '16px 16px 16px 4px',
+        background: 'var(--bg-secondary, #16162a)',
+        color: 'var(--text-primary, #e0e0ff)',
+        fontSize: '0.875rem', lineHeight: '1.7',
+        position: 'relative',
+    },
+    copyBtn: {
+        position: 'absolute', top: '6px', right: '6px',
+        background: 'transparent', border: 'none',
+        cursor: 'pointer', fontSize: '0.8rem',
+        color: 'var(--text-muted, #888)',
+        opacity: 0, transition: 'opacity 0.2s',
+        padding: '4px 6px', borderRadius: '4px',
+    },
+    chipContainer: {
+        display: 'flex', flexWrap: 'wrap', gap: '6px',
+        marginTop: '6px',
+    },
+    chip: {
+        padding: '6px 12px',
+        background: 'rgba(108, 92, 231, 0.12)',
+        border: '1px solid rgba(108, 92, 231, 0.3)',
+        borderRadius: '20px',
+        color: 'var(--accent, #a855f7)',
+        fontSize: '0.75rem', cursor: 'pointer',
+        transition: 'all 0.15s',
+    },
+    inputArea: {
+        padding: '12px 16px',
+        borderTop: '1px solid var(--border-color, #2a2a4a)',
+        display: 'flex', gap: '8px', alignItems: 'flex-end',
+        background: 'var(--bg-card, #1a1a2e)',
+    },
+    textarea: {
+        flex: 1, background: 'transparent',
+        border: '1px solid var(--border-color, #2a2a4a)',
+        borderRadius: '10px', color: 'var(--text-primary, #e0e0ff)',
+        padding: '10px 12px', fontSize: '0.875rem', resize: 'none',
+        outline: 'none', fontFamily: 'inherit', lineHeight: '1.4',
+        maxHeight: '80px', overflowY: 'auto',
+    },
+    sendBtn: (active) => ({
+        width: '38px', height: '38px',
+        borderRadius: '10px',
+        background: active ? 'linear-gradient(135deg, #6c5ce7, #a855f7)' : 'var(--bg-secondary, #16162a)',
+        border: 'none',
+        cursor: active ? 'pointer' : 'not-allowed',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: active ? '#fff' : 'var(--text-muted, #888)',
+        fontSize: '1rem', transition: 'background 0.2s', flexShrink: 0,
+    }),
+    errorMsg: {
+        padding: '10px 14px', borderRadius: '10px',
+        background: 'rgba(255, 71, 87, 0.12)',
+        border: '1px solid rgba(255, 71, 87, 0.3)',
+        color: '#ff4757', fontSize: '0.85rem',
+        display: 'flex', alignItems: 'center', gap: '8px',
+    },
+    suggestionBtn: {
+        textAlign: 'left', padding: '8px 12px',
+        background: 'transparent',
+        border: '1px solid var(--border-color, #2a2a4a)',
+        borderRadius: '8px',
+        color: 'var(--text-secondary, #aaa)',
+        fontSize: '0.8rem', cursor: 'pointer',
+        transition: 'background 0.15s, border-color 0.15s',
+    },
+};
+
+/* ──────────────────────────────────────────────────────────
+   Component
+   ────────────────────────────────────────────────────────── */
 export default function ChatBot({ competitorId, competitorName, analysisData, reviewData = [], adData = [], communityIntelData = [] }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState([
-        {
-            role: 'assistant',
-            content: `👋 I'm StrategosAI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
-        }
-    ]);
+    const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const abortRef = useRef(null);
 
+    const welcomeMessage = {
+        role: 'assistant',
+        content: `👋 I'm **StrategosAI** — your Competitive Intelligence Analyst.\n\nI have a full dossier on **${competitorName || 'your competitor'}**. Ask me about:\n- 🎯 Their pricing weaknesses & how to exploit them\n- ⚔️ Where we win vs. where they win\n- 📧 Draft a cold outreach email in seconds\n\nPick a question below or ask your own.`,
+        followUps: [],
+    };
+
+    // ── Load from localStorage on mount / competitor change ──
+    useEffect(() => {
+        if (!competitorId) return;
+        const saved = localStorage.getItem(LS_KEY(competitorId));
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setMessages(parsed);
+                    return;
+                }
+            } catch { /* ignore */ }
+        }
+        setMessages([welcomeMessage]);
+    }, [competitorId, competitorName]);
+
+    // ── Save to localStorage on message change ──
+    useEffect(() => {
+        if (!competitorId || messages.length === 0) return;
+        localStorage.setItem(LS_KEY(competitorId), JSON.stringify(messages));
+    }, [messages, competitorId]);
+
+    // ── Auto-scroll & focus ──
     useEffect(() => {
         if (isOpen) {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,58 +270,87 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
         }
     }, [messages, isOpen]);
 
-    // Reset chat when competitor changes
-    useEffect(() => {
-        setMessages([{
-            role: 'assistant',
-            content: `👋 I'm StrategosAI — your Competitive Intelligence Analyst. I have a full dossier on **${competitorName || 'your competitor'}**. Ask me anything about their pricing weaknesses, who to target, or how to position against them.`
-        }]);
-    }, [competitorId, competitorName]);
+    // ── Build context ──
+    const buildContext = useCallback(() => ({
+        competitor_name: analysisData?.competitor_name || competitorName || "Unknown",
+        competitor_url: "",
+        pricing_model: analysisData?.pricing_intelligence?.model || "Unknown",
+        pricing_complaints: analysisData?.pricing_intelligence?.pricing_complaints || [],
+        community_price_perception: analysisData?.pricing_intelligence?.community_price_perception || "Unknown",
+        we_win: (analysisData?.feature_gap_analysis?.we_win || []).map(f => f.feature || f.area || String(f)),
+        they_win: (analysisData?.feature_gap_analysis?.they_win || []).map(f => f.feature || f.area || String(f)),
+        sentiment_score: String(analysisData?.community_sentiment?.overall_score || "N/A"),
+        sentiment_trend: analysisData?.community_sentiment?.sentiment_trend || "N/A",
+        top_praise: (analysisData?.community_sentiment?.top_praise || []).map(p => p.point || String(p)),
+        top_complaints: (analysisData?.community_sentiment?.top_complaints || []).map(c => c.point || String(c)),
+        positioning: typeof analysisData?.positioning === 'string' ? analysisData.positioning : JSON.stringify(analysisData?.positioning || {}),
+        review_summary: buildReviewSummary(reviewData),
+        ad_summary: buildAdSummary(adData),
+        community_intel_summary: buildCommunityIntelSummary(communityIntelData),
+    }), [analysisData, competitorName, reviewData, adData, communityIntelData]);
 
-    const sendMessage = async (text) => {
-        const messageText = text || inputValue.trim();
+    // ── Send message (streaming) ──
+    const sendMessage = useCallback(async (text) => {
+        const messageText = (text || inputValue || '').trim();
         if (!messageText || isLoading || !competitorId) return;
 
-        const userMessage = { role: 'user', content: messageText };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        setError(null);
+        const userMessage = { role: 'user', content: messageText, followUps: [] };
+        const placeholderAssistant = { role: 'assistant', content: '', followUps: [] };
+
+        setMessages(prev => [...prev, userMessage, placeholderAssistant]);
         setInputValue('');
         setIsLoading(true);
 
-        // Build history to send (exclude the initial greeting)
-        const historyToSend = newMessages.slice(1, -1).map(m => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: m.content
-        }));
+        const historyToSend = messages
+            .filter((_, i) => i > 0)  // skip welcome
+            .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
 
-        // Build context object with review/ad summaries
-        const context = {
-            competitor_name: analysisData?.competitor_name || competitorName || "Unknown",
-            competitor_url: "",
-            pricing_model: analysisData?.pricing_intelligence?.model || "Unknown",
-            pricing_complaints: analysisData?.pricing_intelligence?.pricing_complaints || [],
-            community_price_perception: analysisData?.pricing_intelligence?.community_price_perception || "Unknown",
-            we_win: (analysisData?.feature_gap_analysis?.we_win || []).map(f => f.feature || f.area || String(f)),
-            they_win: (analysisData?.feature_gap_analysis?.they_win || []).map(f => f.feature || f.area || String(f)),
-            sentiment_score: String(analysisData?.community_sentiment?.overall_score || "N/A"),
-            sentiment_trend: analysisData?.community_sentiment?.sentiment_trend || "N/A",
-            top_praise: (analysisData?.community_sentiment?.top_praise || []).map(p => p.point || String(p)),
-            top_complaints: (analysisData?.community_sentiment?.top_complaints || []).map(c => c.point || String(c)),
-            positioning: typeof analysisData?.positioning === 'string' ? analysisData.positioning : JSON.stringify(analysisData?.positioning || {}),
-            review_summary: buildReviewSummary(reviewData),
-            ad_summary: buildAdSummary(adData),
-            community_intel_summary: buildCommunityIntelSummary(communityIntelData),
-        };
+        const context = buildContext();
+        let fullText = '';
 
-        try {
-            const result = await sendChatMessage(competitorId, context, historyToSend, messageText);
-            setMessages(prev => [...prev, { role: 'assistant', content: result.reply }]);
-        } catch (err) {
-            setMessages(prev => [...prev, { role: 'assistant', content: `❌ Sorry, I hit an error: ${err.message}` }]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        const abort = streamChatMessage(
+            competitorId, context, historyToSend, messageText,
+            // onToken
+            (token) => {
+                fullText += token;
+                setMessages(prev => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = { ...updated[updated.length - 1], content: fullText };
+                    return updated;
+                });
+            },
+            // onDone
+            () => {
+                const { cleanText, followUps } = parseFollowUps(fullText);
+                setMessages(prev => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = { role: 'assistant', content: cleanText, followUps };
+                    return updated;
+                });
+                setIsLoading(false);
+            },
+            // onError — fall back to non-streaming
+            async (err) => {
+                console.error('Stream error, falling back:', err);
+                try {
+                    const result = await sendChatMessage(competitorId, context, historyToSend, messageText);
+                    const { cleanText, followUps } = parseFollowUps(result.reply);
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = { role: 'assistant', content: cleanText, followUps };
+                        return updated;
+                    });
+                } catch (fallbackErr) {
+                    console.error('Fallback also failed:', fallbackErr);
+                    setError(`The analyst is unavailable. ${fallbackErr.message || 'Please try again.'}`);
+                    setMessages(prev => prev.slice(0, -1)); // remove empty assistant placeholder
+                }
+                setIsLoading(false);
+            }
+        );
+        abortRef.current = abort;
+    }, [inputValue, isLoading, competitorId, messages, buildContext]);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -153,116 +359,117 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
         }
     };
 
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text).catch(() => {});
+    };
+
+    const smartQuestions = getSmartQuestions(analysisData, reviewData, adData, communityIntelData);
+    const isWelcomeState = messages.length <= 1;
+
     return (
         <>
-            {/* Floating Chat Bubble */}
+            {/* ── Floating Chat Bubble ── */}
             <button
+                id="chatbot-toggle"
                 onClick={() => setIsOpen(!isOpen)}
-                style={{
-                    position: 'fixed',
-                    bottom: '24px',
-                    right: '24px',
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '50%',
-                    background: 'var(--accent)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    zIndex: 1000,
-                    boxShadow: '0 4px 20px rgba(108, 92, 231, 0.5)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                style={styles.bubble}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 30px rgba(108, 92, 231, 0.7)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(108, 92, 231, 0.5)'; }}
                 title="Ask StrategosAI"
             >
                 {isOpen ? '✕' : '🧠'}
             </button>
 
-            {/* Chat Panel */}
+            {/* ── Chat Panel ── */}
             {isOpen && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '92px',
-                    right: '24px',
-                    width: '380px',
-                    maxHeight: '550px',
-                    borderRadius: '16px',
-                    background: 'var(--bg-card)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--border-color)',
-                    boxShadow: 'var(--shadow-lg)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    zIndex: 999,
-                    overflow: 'hidden',
-                }}>
+                <div style={styles.panel}>
                     {/* Header */}
-                    <div style={{
-                        padding: '14px 18px',
-                        borderBottom: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        background: 'var(--bg-secondary)',
-                    }}>
-                        <span style={{ fontSize: '1.2rem' }}>🧠</span>
-                        <div>
-                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary)' }}>StrategosAI Analyst</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }}></span>
+                    <div style={styles.header}>
+                        <span style={{ fontSize: '1.3rem' }}>🧠</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-primary, #e0e0ff)' }}>
+                                StrategosAI Analyst
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent, #a855f7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00d26a', display: 'inline-block', animation: 'pulse 2s infinite' }} />
                                 {competitorName ? `Briefed on ${competitorName}` : 'Online'}
                             </div>
                         </div>
+                        {messages.length > 1 && (
+                            <button
+                                onClick={() => { setMessages([welcomeMessage]); localStorage.removeItem(LS_KEY(competitorId)); }}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted, #888)', cursor: 'pointer', fontSize: '0.75rem', padding: '4px 8px', borderRadius: '6px' }}
+                                title="Clear chat"
+                            >
+                                🗑️
+                            </button>
+                        )}
                     </div>
 
                     {/* Messages */}
-                    <div style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        padding: '16px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                        maxHeight: '320px',
-                    }}>
+                    <div style={styles.messagesArea}>
                         {messages.map((msg, i) => (
-                            <div key={i} style={{
-                                display: 'flex',
-                                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                            }}>
-                                <div style={{
-                                    maxWidth: '85%',
-                                    padding: '10px 14px',
-                                    borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                    background: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-secondary)',
-                                    color: msg.role === 'user' ? '#fff' : 'var(--text-primary)',
-                                    fontSize: '0.875rem',
-                                    lineHeight: '1.5',
-                                    whiteSpace: 'pre-wrap',
-                                }}>
-                                    {msg.content}
+                            <div key={i}>
+                                <div style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                    <div
+                                        style={msg.role === 'user' ? styles.userBubble : styles.aiBubble}
+                                        onMouseEnter={e => { const btn = e.currentTarget.querySelector('.copy-btn'); if (btn) btn.style.opacity = '1'; }}
+                                        onMouseLeave={e => { const btn = e.currentTarget.querySelector('.copy-btn'); if (btn) btn.style.opacity = '0'; }}
+                                    >
+                                        {msg.role === 'assistant' ? (
+                                            <>
+                                                <button
+                                                    className="copy-btn"
+                                                    style={styles.copyBtn}
+                                                    onClick={() => copyToClipboard(msg.content)}
+                                                    title="Copy to clipboard"
+                                                >
+                                                    📋
+                                                </button>
+                                                <div className="markdown-content">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                        {msg.content || (isLoading && i === messages.length - 1 ? '' : '')}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            msg.content
+                                        )}
+                                    </div>
                                 </div>
+
+                                {/* Follow-up chips under assistant messages */}
+                                {msg.role === 'assistant' && msg.followUps?.length > 0 && !isLoading && (
+                                    <div style={{ ...styles.chipContainer, paddingLeft: '4px', marginTop: '8px' }}>
+                                        {msg.followUps.map((q, j) => (
+                                            <button
+                                                key={j}
+                                                onClick={() => sendMessage(q)}
+                                                style={styles.chip}
+                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(108, 92, 231, 0.25)'; e.currentTarget.style.borderColor = 'var(--accent, #a855f7)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(108, 92, 231, 0.12)'; e.currentTarget.style.borderColor = 'rgba(108, 92, 231, 0.3)'; }}
+                                            >
+                                                {q}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ))}
-                        {isLoading && (
+
+                        {/* Typing indicator */}
+                        {isLoading && messages[messages.length - 1]?.content === '' && (
                             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                                 <div style={{
-                                    padding: '12px 16px',
-                                    borderRadius: '16px 16px 16px 4px',
-                                    background: 'var(--bg-secondary)',
-                                    display: 'flex',
-                                    gap: '4px',
-                                    alignItems: 'center',
+                                    padding: '12px 16px', borderRadius: '16px 16px 16px 4px',
+                                    background: 'var(--bg-secondary, #16162a)',
+                                    display: 'flex', gap: '6px', alignItems: 'center',
                                 }}>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #888)', marginRight: '4px' }}>Analyst is thinking</span>
                                     {[0, 1, 2].map(i => (
                                         <span key={i} style={{
                                             width: '6px', height: '6px', borderRadius: '50%',
-                                            background: 'var(--accent)',
+                                            background: 'var(--accent, #a855f7)',
                                             animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                                             display: 'inline-block',
                                         }} />
@@ -270,34 +477,38 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                                 </div>
                             </div>
                         )}
+
+                        {/* Error message */}
+                        {error && (
+                            <div style={styles.errorMsg}>
+                                <span>⚠️</span>
+                                <span style={{ flex: 1 }}>{error}</span>
+                                <button
+                                    onClick={() => setError(null)}
+                                    style={{ background: 'transparent', border: 'none', color: '#ff4757', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Suggested Questions (only for first message) */}
-                    {messages.length === 1 && (
-                        <div style={{ padding: '0 16px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {[
-                                ...BASE_QUESTIONS,
-                                ...(reviewData.some(r => r.scraper_status === 'success') ? REVIEW_QUESTIONS : []),
-                                ...(adData.some(a => a.scraper_status === 'success') ? AD_QUESTIONS : []),
-                                ...(communityIntelData.some(c => c.scraper_status === 'success') ? COMMUNITY_QUESTIONS : []),
-                            ].map((q, i) => (
+                    {/* Suggested questions (welcome state) */}
+                    {isWelcomeState && (
+                        <div style={{
+                            padding: '0 16px 10px',
+                            display: 'flex', flexDirection: 'column', gap: '5px',
+                            maxHeight: '150px', overflowY: 'auto',
+                        }}>
+                            {smartQuestions.slice(0, 6).map((q, i) => (
                                 <button
                                     key={i}
                                     onClick={() => sendMessage(q)}
-                                    style={{
-                                        textAlign: 'left',
-                                        padding: '8px 12px',
-                                        background: 'transparent',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '8px',
-                                        color: 'var(--text-secondary)',
-                                        fontSize: '0.8rem',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.15s',
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    style={styles.suggestionBtn}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-secondary, #16162a)'; e.currentTarget.style.borderColor = 'var(--accent, #a855f7)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border-color, #2a2a4a)'; }}
                                 >
                                     {q}
                                 </button>
@@ -306,14 +517,7 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                     )}
 
                     {/* Input */}
-                    <div style={{
-                        padding: '12px 16px',
-                        borderTop: '1px solid var(--border-color)',
-                        display: 'flex',
-                        gap: '8px',
-                        alignItems: 'flex-end',
-                        background: 'var(--bg-card)'
-                    }}>
+                    <div style={styles.inputArea}>
                         <textarea
                             ref={inputRef}
                             rows={1}
@@ -322,42 +526,13 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                             onChange={e => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
                             disabled={isLoading || !competitorId}
-                            style={{
-                                flex: 1,
-                                background: 'transparent',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '10px',
-                                color: 'var(--text-primary)',
-                                padding: '10px 12px',
-                                fontSize: '0.875rem',
-                                resize: 'none',
-                                outline: 'none',
-                                fontFamily: 'inherit',
-                                lineHeight: '1.4',
-                                maxHeight: '80px',
-                                overflowY: 'auto',
-                            }}
+                            style={styles.textarea}
                         />
                         <button
+                            id="chatbot-send"
                             onClick={() => sendMessage()}
                             disabled={isLoading || !inputValue.trim() || !competitorId}
-                            style={{
-                                width: '38px',
-                                height: '38px',
-                                borderRadius: '10px',
-                                background: inputValue.trim() && !isLoading
-                                    ? 'var(--accent)'
-                                    : 'var(--bg-secondary)',
-                                border: 'none',
-                                cursor: inputValue.trim() && !isLoading ? 'pointer' : 'not-allowed',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: inputValue.trim() && !isLoading ? '#fff' : 'var(--text-muted)',
-                                fontSize: '1rem',
-                                transition: 'background 0.2s',
-                                flexShrink: 0,
-                            }}
+                            style={styles.sendBtn(!isLoading && inputValue.trim() && competitorId)}
                         >
                             ➤
                         </button>
@@ -369,6 +544,37 @@ export default function ChatBot({ competitorId, competitorName, analysisData, re
                 @keyframes bounce {
                     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
                     30% { transform: translateY(-6px); opacity: 1; }
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.4; }
+                }
+                .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+                    margin: 8px 0 4px; font-size: 0.95rem; color: var(--accent, #a855f7);
+                }
+                .markdown-content p { margin: 4px 0; }
+                .markdown-content ul, .markdown-content ol { margin: 4px 0; padding-left: 20px; }
+                .markdown-content li { margin: 2px 0; }
+                .markdown-content strong { color: var(--accent, #a855f7); }
+                .markdown-content code {
+                    background: rgba(108, 92, 231, 0.12); padding: 2px 6px;
+                    border-radius: 4px; font-size: 0.82rem;
+                }
+                .markdown-content pre {
+                    background: rgba(0,0,0,0.3); padding: 10px;
+                    border-radius: 8px; overflow-x: auto; margin: 6px 0;
+                }
+                .markdown-content table {
+                    border-collapse: collapse; width: 100%; margin: 6px 0;
+                    font-size: 0.82rem;
+                }
+                .markdown-content th, .markdown-content td {
+                    border: 1px solid var(--border-color, #2a2a4a);
+                    padding: 4px 8px; text-align: left;
+                }
+                .markdown-content th {
+                    background: rgba(108, 92, 231, 0.15);
+                    color: var(--accent, #a855f7);
                 }
             `}</style>
         </>
