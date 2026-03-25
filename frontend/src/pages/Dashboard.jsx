@@ -387,22 +387,53 @@ export default function Dashboard({
             {/* Inferred Roadmap (NEW based on jobs data) */}
             {(analysisData.inferred_roadmap || []).length > 0 && (
                 <div className="glass-card--static" style={{ marginBottom: 'var(--space-xl)' }}>
-                    <div className="section-title">🔮 Inferred Roadmap (via Job Postings & News)</div>
+                    <div className="section-title">🔮 Inferred Competitor Roadmap</div>
                     <div className="grid-2">
-                        {analysisData.inferred_roadmap.map((item, i) => (
-                            <div key={i} className="glass-card">
-                                <h4 style={{ color: 'var(--accent-danger)', fontSize: '0.9rem', marginBottom: 'var(--space-xs)' }}>
-                                    Building: {item.inference}
-                                </h4>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>
-                                    {item.reasoning}
-                                </p>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    <span>📍 {item.source_signal}</span>
-                                    <span>⏱ {item.timeline_estimate}</span>
+                        {analysisData.inferred_roadmap.map((item, i) => {
+                            const timelineColor = item.timeline_estimate?.includes('long') ? '#a855f7' :
+                                item.timeline_estimate?.includes('medium') ? '#f59e0b' : '#10b981';
+                            return (
+                                <div key={i} className="glass-card" style={{ borderLeft: `3px solid ${timelineColor}`, gap: 0 }}>
+                                    {/* Header row */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-sm)' }}>
+                                        <span style={{
+                                            fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase',
+                                            letterSpacing: '0.5px', color: timelineColor,
+                                            padding: '2px 8px', borderRadius: '100px',
+                                            background: `${timelineColor}18`,
+                                            border: `1px solid ${timelineColor}40`
+                                        }}>
+                                            {item.timeline_estimate?.replace('_', ' ') || 'Unknown timeline'}
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>🔮 AI inference</span>
+                                    </div>
+
+                                    {/* Inference title */}
+                                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 'var(--space-sm)', lineHeight: 1.4 }}>
+                                        {item.inference}
+                                    </div>
+
+                                    {/* Reasoning */}
+                                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', lineHeight: 1.6, margin: 0 }}>
+                                        {item.reasoning}
+                                    </p>
+
+                                    {/* Source chip */}
+                                    {item.source_signal && (
+                                        <div style={{ marginTop: 'var(--space-md)', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                            <span style={{ fontSize: '0.75rem', flexShrink: 0, marginTop: '1px' }}>📎</span>
+                                            <span style={{
+                                                fontSize: '0.72rem', color: 'var(--accent-primary)', lineHeight: 1.4,
+                                                fontStyle: 'italic', background: 'var(--accent-primary-glow)',
+                                                padding: '3px 8px', borderRadius: '6px', display: 'inline-block'
+                                            }}>
+                                                {item.source_signal}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -447,11 +478,30 @@ export default function Dashboard({
                 </div>
                 <div className="heatmap-grid">
                     {allSignals.map((signal, i) => {
-                        const sevLevel = signal.type === 'threat' ? (signal.severity_score >= 80 ? 'existential' : 'moderate') : 'opportunity';
+                        const isThreat = signal.type === 'threat';
+                        const isExistential = isThreat && signal.severity_score >= 80;
+                        const sevLevel = isThreat ? (isExistential ? 'existential' : 'moderate') : 'opportunity';
+                        const icon = isExistential ? '🚨' : isThreat ? '⚠️' : '💡';
+                        const score = isThreat ? signal.severity_score : null;
                         return (
                             <div className={`heatmap-cell heatmap-cell--${sevLevel}`} key={i} title={signal.description}>
-                                <div style={{ fontSize: '0.7rem', marginBottom: 4 }}>{signal.type === 'threat' ? '⚠️' : '🟢'}</div>
-                                <div style={{ fontSize: '0.7rem', lineHeight: 1.3 }}>{signal.title?.substring(0, 40)}{signal.title?.length > 40 ? '...' : ''}</div>
+                                <div style={{ fontSize: '1.4rem', lineHeight: 1 }}>{icon}</div>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.35, textAlign: 'center' }}>
+                                    {signal.title}
+                                </div>
+                                {score !== null && (
+                                    <div style={{
+                                        marginTop: '2px',
+                                        fontSize: '0.65rem',
+                                        fontWeight: 700,
+                                        padding: '1px 8px',
+                                        borderRadius: '100px',
+                                        background: isExistential ? 'rgba(192,57,43,0.15)' : 'rgba(232,168,56,0.15)',
+                                        letterSpacing: '0.3px'
+                                    }}>
+                                        Score {score}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -734,13 +784,35 @@ export default function Dashboard({
                                     const reddit = communityIntelData.find(c => c.source === 'reddit_deep' && c.scraper_status === 'success');
                                     if (!reddit?.complaints?.length) return null;
                                     return (
-                                        <div className="glass-card">
-                                            <h4 style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>😡 Top Reddit Complaints</h4>
+                                        <div className="glass-card" style={{ borderTop: '3px solid #ef4444' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
+                                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>😡</div>
+                                                <div>
+                                                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#ef4444' }}>Top Reddit Complaints</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{reddit.complaints.length} posts found via deep scrape</div>
+                                                </div>
+                                            </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                 {reddit.complaints.slice(0, 5).map((comp, i) => (
-                                                    <a key={i} href={comp.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{comp.title}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>r/{comp.subreddit} • Score: {comp.score}</div>
+                                                    <a key={i} href={comp.url} target="_blank" rel="noopener noreferrer"
+                                                        style={{ textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'flex-start',
+                                                            padding: 'var(--space-sm)', borderRadius: 'var(--radius-sm)',
+                                                            background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.1)',
+                                                            transition: 'all 150ms ease'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.09)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.04)'}
+                                                    >
+                                                        <div style={{ minWidth: 22, height: 22, borderRadius: '50%', background: '#ef4444', color: '#fff', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, lineHeight: 1.35 }}>{comp.title}</div>
+                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                                <span style={{ fontSize: '0.68rem', padding: '1px 8px', borderRadius: '100px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 600 }}>r/{comp.subreddit}</span>
+                                                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                    <span style={{ color: '#f59e0b' }}>▲</span> {comp.score}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </a>
                                                 ))}
                                             </div>
@@ -755,13 +827,37 @@ export default function Dashboard({
                                     const allHn = [...(hn.positive_comments || []), ...(hn.negative_comments || [])].sort((a,b) => (b.points||0) - (a.points||0)).slice(0,5);
                                     if (!allHn.length) return null;
                                     return (
-                                        <div className="glass-card">
-                                            <h4 style={{ color: '#f97316', fontSize: '0.9rem', marginBottom: 'var(--space-sm)' }}>🔥 Top HN Discussions</h4>
+                                        <div className="glass-card" style={{ borderTop: '3px solid #f97316' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
+                                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(249,115,22,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>🔥</div>
+                                                <div>
+                                                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f97316' }}>Top HN Discussions</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Sorted by points</div>
+                                                </div>
+                                            </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                 {allHn.map((post, i) => (
-                                                    <a key={i} href={post.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 2 }}>"{post.text.substring(0, 100)}..."</div>
-                                                        <div style={{ fontSize: '0.75rem', color: '#f97316' }}>{post.author} • {post.points} points</div>
+                                                    <a key={i} href={post.url} target="_blank" rel="noopener noreferrer"
+                                                        style={{ textDecoration: 'none', display: 'flex', gap: '12px', alignItems: 'flex-start',
+                                                            padding: 'var(--space-sm)', borderRadius: 'var(--radius-sm)',
+                                                            background: 'rgba(249,115,22,0.04)', border: '1px solid rgba(249,115,22,0.1)',
+                                                            transition: 'all 150ms ease'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(249,115,22,0.09)'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(249,115,22,0.04)'}
+                                                    >
+                                                        <div style={{ minWidth: 22, height: 22, borderRadius: '50%', background: '#f97316', color: '#fff', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 4, fontStyle: 'italic' }}>
+                                                                "{post.text?.substring(0, 120)}{post.text?.length > 120 ? '...' : ''}"
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.68rem', fontWeight: 600, color: '#f97316' }}>{post.author}</span>
+                                                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                    <span style={{ color: '#f59e0b' }}>▲</span> {post.points} pts
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </a>
                                                 ))}
                                             </div>
