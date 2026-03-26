@@ -37,6 +37,12 @@ Digests raw data to generate structured strategic intelligence:
 ### 💬 5. AI ChatBot (The Strategist)
 - Interact natively with an AI assistant possessing the full context of scraped review data, ad intelligence, and feature gaps. Interrogate the bot to write rebuttals or understand competitor weaknesses on the fly.
 
+### 🧪 6. Business Sandbox (Swarm Intelligence Simulation)
+- **Market War-Gaming:** Simulate business decisions or competitor moves before they happen in real life.
+- **Swarm Reactions:** Spawns a simulated crowd of AI agents (customers, skeptics, analysts) who react organically to your scenarios.
+- **Predictive Metrics:** Get actionable metrics like Adoption Likelihood, Sentiment Score, Competitor Threat Level, and an Overall Market Score (0-100).
+- **Phased Architecture:** Designed to seamlessly transition from LLM-powered simulations to full [MiroFish](https://github.com/666ghj/MiroFish) swarm intelligence API integration.
+
 ---
 
 ## 🛠️ Tech Stack
