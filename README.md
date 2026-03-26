@@ -1,41 +1,59 @@
-# 🤖 Compy — Multi-Agent Competitive Intelligence Engine
+# 🤖 Strategos AI — Multi-Agent Competitive Intelligence Engine
 
-Compy is a sophisticated, multi-agent platform designed to provide businesses with deep competitive intelligence. It leverages advanced AI agents to crawl, analyze, and monitor market trends, competitor moves, and strategic opportunities.
+Strategos AI is a sophisticated, multi-agent platform designed to provide businesses with deep competitive intelligence. It leverages advanced AI agents to crawl, analyze, and monitor market trends, competitor moves, and strategic opportunities.
 
-Built with a high-performance **FastAPI** backend and a modern **React** frontend, Compy empowers teams to stay ahead of the curve through data-driven strategic insights.
+Built with a high-performance **FastAPI** backend and a modern **React** frontend, Strategos AI empowers teams to stay ahead of the curve through data-driven strategic insights, synthesized from websites, reviews, ad libraries, and online communities.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features & Agent Workflows
 
-- 🏢 **Company Profiling**: Deep-dive analysis of your own company's market position and core strengths.
-- ⚔️ **Competitor Intelligence**: Automated tracking and benchmarking against key industry competitors.
-- 🗺️ **Strategic Roadmaps**: Generate tactical 4-week roadmaps and long-term strategic plans.
-- 📡 **Real-time Monitoring**: Integrated scheduler to track competitor updates and news in real-time.
-- 💬 **AI Agent Chat**: Interact directly with specialized intelligence agents for customized research.
-- 📈 **Visual Dashboards**: Interactive data visualization using Chart.js to identify trends at a glance.
-- 📞 **Voice Intelligence**: Automated voice call integration via Twilio for intelligence gathering.
-- 📧 **Automated Alerts**: Email dispatch system for critical market shifts and competitive milestones.
-- 📄 **Insight Export**: Generate and download comprehensive PDF reports of your strategic findings.
+### 🧬 1. Identity / DNA Extraction
+- **Company Profiling:** Automatically crawl your company's homepage, pricing, and feature pages to extract your "DNA Profile" – including Ideal Customer Profile (ICP), core value propositions, and pricing models.
+
+### 🕵️ 2. The Scout Agent (Intel Gathering)
+Automated tracking and benchmarking against key competitors across multiple vectors:
+- **Website Crawling:** Maps out competitor products and pricing.
+- **Review Platforms:** Scrapes **Trustpilot** and **G2** to fetch star ratings and identify recurring complaints.
+- **Ad Libraries:** Analyzes **Meta Ads** and **Google Ads Transparency** to gauge marketing aggressiveness and core hooks.
+- **Community Intelligence:** Deep-scans **HackerNews** and **Reddit** for organic mentions and "switching signals."
+- **Product Velocity Tracker:** Scrapes competitor changelogs and release pages to calculate a Shipping Velocity Score (0-100), actively tracking how fast they iterate.
+
+### 🧠 3. The Analyst Agent (Synthesis)
+Digests raw data to generate structured strategic intelligence:
+- **Feature & Pricing Gaps:** Analyzes exactly where you win and where you lose.
+- **Strategic Radar Mapping:** Scores competitors on a 0-100 scale across vectors like Features, Pricing, Market Position, Growth, Enterprise Readiness, and Community.
+- **Inferred Roadmaps:** Predicts competitor moves based on job postings, news, and site changes.
+
+### 📊 4. Strategic Dashboard & Actionable Outcomes
+- **Battle Cards & Radar Charts:** Direct visual comparisons of your value prop vs. competitors via Chart.js.
+- **Ad Aggressiveness & Objections Tables:** Matrix views of competitor marketing spend and common customer complaints.
+- **"Claim vs. Reality" Intelligence Table:** Highlights marketing-vs-reality gaps, empowering sales reps to generate evidence-based cold emails directly from the dashboard.
+- **Sales Sequence Generator:** AI-generated targeted cold email sequences designed to poach competitor customers by attacking known weaknesses.
+- **Google Calendar Integration:** Push strategic tasks or roadmap adjustments directly to your calendar.
+- **PDF Export:** Download comprehensive, high-quality strategic reports.
+- **Market Intelligence:** Live financial news headlines fetched directly from MoneyControl.
+
+### 💬 5. AI ChatBot (The Strategist)
+- Interact natively with an AI assistant possessing the full context of scraped review data, ad intelligence, and feature gaps. Interrogate the bot to write rebuttals or understand competitor weaknesses on the fly.
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+)
-- **AI Engine**: [Google Gemini Pro](https://ai.google.dev/)
-- **ORM/DB**: SQLAlchemy with aiosqlite (SQLite)
-- **Scheduling**: APScheduler
-- **Communications**: Twilio API (Voice), SMTP (Email)
-- **Data Gathering**: HTTPX, BeautifulSoup4, Readability
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python)
+- **AI Engine**: [Google Gemini Pro / Langchain](https://ai.google.dev/)
+- **ORM/DB**: SQLAlchemy with SQLite (async)
+- **Scheduling/Async**: Background tasks & SSE for real-time updates
+- **Internal Integrations**: Google OAuth, Twilio (Voice), SMTP (Email)
 
 ### Frontend
 - **Framework**: [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
 - **Routing**: React Router DOM (v6)
 - **Visualization**: Chart.js & React-Chartjs-2
 - **Styling**: Modern CSS with Neon/Glassmorphism design
-- **Auth**: Google OAuth Integration
+- **State/API**: Modern React Hooks and fetch for SSE streams
 
 ---
 
@@ -102,7 +120,7 @@ Built with a high-performance **FastAPI** backend and a modern **React** fronten
 ```text
 Compy/
 ├── backend/            # FastAPI Application
-│   ├── agents/         # specialized AI agent logic
+│   ├── agents/         # Scout, Analyst, DNA Extractor logic
 │   ├── routers/        # API endpoints (analysis, chat, voice, etc.)
 │   ├── services/       # Core business logic & scheduler
 │   ├── models.py       # Database schemas
@@ -112,6 +130,7 @@ Compy/
 │   │   ├── pages/      # Dashboard, Analysis, Intelligence pages
 │   │   ├── components/ # Reusable UI components
 │   │   └── App.jsx     # Main routing and layout
+├── feats.txt           # Detailed feature and architecture specs
 └── README.md           # You are here!
 ```
 
