@@ -1,14 +1,14 @@
-# 🤖 Strategos AI — Multi-Agent Competitive Intelligence Engine
+# Strategos AI — Multi-Agent Competitive Intelligence Engine
 
 Strategos AI is a sophisticated, multi-agent platform designed to provide businesses with deep competitive intelligence. It leverages advanced AI agents to crawl, analyze, and monitor market trends, competitor moves, and strategic opportunities.
 
 Built with a high-performance **FastAPI** backend and a modern **React** frontend, Strategos AI empowers teams to stay ahead of the curve through data-driven strategic insights, synthesized from websites, reviews, ad libraries, and online communities.
 
-![Main Dashboard Placeholder](frontend/public/dashboard-screenshot.png)
+![Main Dashboard](screenshots_snucHacks26/Screenshot%202026-04-02%20222442.png)
 
 ---
 
-## 🏗️ Agent Architecture Deep-Dive
+## Agent Architecture Deep-Dive
 
 Strategos AI shifts away from linear scripts toward autonomous, goal-oriented agentic workflows leveraging **Google Gemini 2.5 Flash** and semantic heuristics:
 - **Heuristic-AI Hybrid Crawlers:** The `Scout` agent prioritizes strategic links via lightning-fast regex heuristics (e.g., scoring `/pricing` and `/enterprise` URLs with high priority), reserving expensive LLM calls only for unknown, novel page structures.
@@ -17,12 +17,12 @@ Strategos AI shifts away from linear scripts toward autonomous, goal-oriented ag
 
 ---
 
-## ✨ Key Features & Agent Workflows
+## Key Features & Agent Workflows
 
-### 🧬 1. Identity / DNA Extraction
+### 1. Identity / DNA Extraction
 - **Company Profiling:** Automatically crawl your company's homepage, pricing, and feature pages to extract your "DNA Profile" – including Ideal Customer Profile (ICP), core value propositions, and pricing models.
 
-### 🕵️ 2. The Scout Agent (Intel Gathering)
+### 2. The Scout Agent (Intel Gathering)
 Automated tracking and benchmarking against key competitors across multiple vectors.
 _Under the hood: Implements a hybrid heuristic-LLM ranking engine (`_quick_rank_links` & `classify_page_with_ai`). It dynamically calculates strategic scores (0-100) for links, abandoning generic blog posts and prioritizing pricing/enterprise docs. Crawling happens concurrently using HTTP asynchronous batch-fetching._
 - **Website Crawling:** Maps out competitor products and pricing based on algorithmic token prioritization.
@@ -31,15 +31,15 @@ _Under the hood: Implements a hybrid heuristic-LLM ranking engine (`_quick_rank_
 - **Community Intelligence:** Deep-scans **HackerNews** and **Reddit** for organic mentions and "switching signals."
 - **Product Velocity Tracker:** Scrapes competitor changelogs and release pages to calculate a Shipping Velocity Score (0-100), actively tracking how fast they iterate.
 
-![Scout Agent Map Placeholder](frontend/public/scout-map-screenshot.png)
+![Scout Agent Map](screenshots_snucHacks26/Screenshot%202026-04-02%20222534.png)
 
-### 🧠 3. The Analyst Agent (Synthesis)
+### 3. The Analyst Agent (Synthesis)
 Digests raw data to generate structured strategic intelligence:
 - **Feature & Pricing Gaps:** Analyzes exactly where you win and where you lose.
 - **Strategic Radar Mapping:** Scores competitors on a 0-100 scale across vectors like Features, Pricing, Market Position, Growth, Enterprise Readiness, and Community.
 - **Inferred Roadmaps:** Predicts competitor moves based on job postings, news, and site changes.
 
-### 📊 4. Strategic Dashboard & Actionable Outcomes
+### 4. Strategic Dashboard & Actionable Outcomes
 - **Battle Cards & Radar Charts:** Direct visual comparisons of your value prop vs. competitors via Chart.js.
 - **Ad Aggressiveness & Objections Tables:** Matrix views of competitor marketing spend and common customer complaints.
 - **"Claim vs. Reality" Intelligence Table:** Highlights marketing-vs-reality gaps, empowering sales reps to generate evidence-based cold emails directly from the dashboard.
@@ -48,12 +48,14 @@ Digests raw data to generate structured strategic intelligence:
 - **PDF Export:** Download comprehensive, high-quality strategic reports.
 - **Market Intelligence:** Live financial news headlines fetched directly from MoneyControl.
 
-![Dashboard Flow Placeholder](frontend/public/dashboard-features-screenshot.png)
+![Dashboard Flow](screenshots_snucHacks26/Screenshot%202026-04-02%20222610.png)
 
-### 💬 5. AI ChatBot (The Strategist)
+### 5. AI ChatBot (The Strategist)
 - Interact natively with an AI assistant possessing the full context of scraped review data, ad intelligence, and feature gaps. Interrogate the bot to write rebuttals or understand competitor weaknesses on the fly.
 
-### 🧪 6. Business Sandbox (Swarm Intelligence Simulation)
+![AI ChatBot](screenshots_snucHacks26/Screenshot%202026-04-02%20222726.png)
+
+### 6. Business Sandbox (Swarm Intelligence Simulation)
 _Technical Implementation: The sandbox acts as our lightweight, local testbed for swarm intelligence—our first phase of integrating an architecture similar to [MiroFish](https://github.com/666ghj/MiroFish). Under the hood, the backend injects deep contextual vectors (your company's extracted DNA, target ICPs, and your competitors' mapped vulnerabilities) into a specialized `SANDBOX_SYSTEM_PROMPT`._
 _Instead of a single predictive response, the LLM hallucinates an ecosystem of exactly **6 diverse persona sub-agents** (e.g., highly skeptical Reddit users, pragmatic HackerNews builders, enthusiastic brand champions). This dynamic swarm organically debates the proposed scenario. The resulting aggregated metrics (`adoption_likelihood`, `churn_risk`) provide a mathematically grounded "Market Score" representing reality-tested strategic outcomes._
 - **Market War-Gaming:** Simulate business decisions or competitor moves before they happen in real life.
@@ -61,11 +63,12 @@ _Instead of a single predictive response, the LLM hallucinates an ecosystem of e
 - **Predictive Metrics:** Analyzes swarm consensus to yield Adoption Likelihood, Sentiment Score, Competitor Threat Level, and an Overall Market Score (0-100).
 - **Phased MiroFish Architecture:** Engineered to seamlessly transition from prompt-driven multi-agent simulations into full independent-node swarm intelligence APIs.
 
-![Business Sandbox Placeholder](frontend/public/sandbox-simulation-screenshot.png)
+![Business Sandbox](screenshots_snucHacks26/Screenshot%202026-04-02%20222813.png)
+![Business Sandbox Additional View](screenshots_snucHacks26/Screenshot%202026-04-02%20222846.png)
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python)
@@ -83,7 +86,7 @@ _Instead of a single predictive response, the LLM hallucinates an ecosystem of e
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.10 or higher
@@ -141,7 +144,7 @@ _Instead of a single predictive response, the LLM hallucinates an ecosystem of e
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 Compy/
@@ -162,6 +165,6 @@ Compy/
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
