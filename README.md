@@ -1,6 +1,6 @@
 # Strategos AI — Multi-Agent Competitive Intelligence Engine
 
-Strategos AI is an automation-first, multi-agent platform designed to provide businesses with deep competitive intelligence. It leverages advanced AI agents to crawl, analyze, and monitor market trends, competitor moves, and strategic opportunities.
+Strategos AI is a multi-agent platform built around automation, giving companies rich insight into their competitive landscape. It uses sophisticated AI agents to scan, evaluate, and track shifts in the market, movements by rivals, and emerging strategic openings.
 
 Built with a high-performance **FastAPI** backend and a modern **React** frontend, Strategos AI empowers teams to stay ahead of the curve through data-driven strategic insights, synthesized from websites, reviews, ad libraries, and online communities.
 
